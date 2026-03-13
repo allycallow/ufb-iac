@@ -3,6 +3,10 @@ resource "aws_cognito_user_pool" "pool" {
   username_attributes      = ["email"]
   auto_verified_attributes = ["email"]
 
+  lambda_config {
+    post_confirmation = "arn:aws:lambda:eu-west-2:081077757258:function:production-ufb-post-confirmation"
+  }
+
   account_recovery_setting {
     recovery_mechanism {
       name     = "verified_email"

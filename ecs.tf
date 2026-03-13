@@ -162,7 +162,7 @@ module "backend_task_definition" {
         },
         {
           "name" : "RECOMMENDATIONS_ENDPOINT",
-          "value" : "https://d43l5ubr9i.execute-api.eu-west-2.amazonaws.com/production"
+          "value" : "https://y574l70d92.execute-api.eu-west-2.amazonaws.com/production"
         },
         {
           "name" : "NOTIFICATIONS_ENDPOINT",
@@ -527,7 +527,8 @@ module "airflow_task_definition" {
       resources = [
         "arn:aws:s3:::ufb-db-exports/*",
         "arn:aws:s3:::prod-recommendations-formatted/*",
-        "arn:aws:s3:::prod-recommendations-processed/*"
+        "arn:aws:s3:::prod-recommendations-processed/*",
+        "arn:aws:s3:::ufb-prod-outputs/*"
       ]
     },
     {
@@ -538,7 +539,8 @@ module "airflow_task_definition" {
       resources = [
         "arn:aws:s3:::ufb-db-exports",
         "arn:aws:s3:::prod-recommendations-formatted",
-        "arn:aws:s3:::prod-recommendations-processed"
+        "arn:aws:s3:::prod-recommendations-processed",
+        "arn:aws:s3:::ufb-prod-outputs",
       ]
     },
     {
