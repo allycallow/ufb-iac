@@ -1,0 +1,38 @@
+data "aws_ssoadmin_instances" "this" {}
+
+terraform {
+  required_version = "~> v1.12.2"
+
+  backend "s3" {
+    bucket = "ufb-terraform-state"
+    key    = "terraform_state/terraform.tfstate"
+    region = "eu-west-2"
+  }
+
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = ">= 6.21.0"
+    }
+  }
+}
+
+provider "aws" {
+  default_tags {
+    tags = {
+      Environment = terraform.workspace
+      Name        = local.name
+    }
+  }
+}
+
+locals {
+  name              = "${terraform.workspace}-ufb"
+  region            = "eu-west-2"
+  domain            = "upfrontbeats.com"
+  vpc_cidr          = "10.0.0.0/16"
+  azs               = slice(data.aws_availability_zones.available.names, 0, 3)
+  secret_prefix     = "arn:aws:secretsmanager:${local.region}:${data.aws_caller_identity.current.account_id}:secret:prod/ufb/backend-NKRahZ"
+  instance_arn      = tolist(data.aws_ssoadmin_instances.this.arns)[0]
+  identity_store_id = tolist(data.aws_ssoadmin_instances.this.identity_store_ids)[0]
+}
