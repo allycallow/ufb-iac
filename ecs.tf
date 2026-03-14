@@ -574,7 +574,7 @@ module "airflow_task_definition" {
     },
     {
       effect  = "Allow"
-      actions = ["sqs:GetMessage", "sqs:DeleteMessage", "sqs:ChangeMessageVisibility"]
+      actions = ["sqs:GetMessage", "sqs:DeleteMessage", "sqs:ChangeMessageVisibility", "sqs:ReceiveMessage"]
       resources = [
         module.audio_processing.queue_arn,
         module.audio_processing.dlq_arn

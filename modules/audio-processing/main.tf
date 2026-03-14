@@ -37,7 +37,7 @@ resource "aws_s3_bucket_notification" "media_upload_events" {
   queue {
     queue_arn     = aws_sqs_queue.main.arn
     events        = ["s3:ObjectCreated:*"]
-    filter_prefix = "audio/"
+    filter_prefix = "production-ufb-media/audio/"
     filter_suffix = ".mp3"
   }
 
