@@ -36,3 +36,18 @@ locals {
   instance_arn      = tolist(data.aws_ssoadmin_instances.this.arns)[0]
   identity_store_id = tolist(data.aws_ssoadmin_instances.this.identity_store_ids)[0]
 }
+
+module "audio_processing" {
+  source = "./modules/audio-processing"
+
+  name = "${local.name}-audio-processing"
+
+  tags = {
+    Environment = terraform.workspace
+    Name        = local.name
+    Workflow    = "audio-processing"
+  }
+
+  media_bucket_arn = aws_s3_bucket.media.arn
+  media_bucket_id  = aws_s3_bucket.media.id
+}

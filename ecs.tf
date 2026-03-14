@@ -571,6 +571,14 @@ module "airflow_task_definition" {
       resources = [
         "arn:aws:dynamodb:eu-west-2:081077757258:table/production-ufb-recommendations"
       ]
+    },
+    {
+      effect  = "Allow"
+      actions = ["sqs:GetMessage", "sqs:DeleteMessage", "sqs:ChangeMessageVisibility"]
+      resources = [
+        module.audio_processing.queue_arn,
+        module.audio_processing.dlq_arn
+      ]
     }
   ]
 
