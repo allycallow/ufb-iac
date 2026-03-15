@@ -1,5 +1,5 @@
 locals {
-  repositories = ["backend", "frontend", "airflow"]
+  repositories = ["backend", "frontend", "airflow", "audio-processing"]
 }
 
 resource "aws_ecr_repository" "repos" {

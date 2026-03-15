@@ -50,4 +50,7 @@ module "audio_processing" {
 
   media_bucket_arn = aws_s3_bucket.media.arn
   media_bucket_id  = aws_s3_bucket.media.id
+  ecs_cluster_arn  = module.ecs_cluster.arn
+  image_uri        = "${aws_ecr_repository.repos["audio-processing"].repository_url}:latest"
+  private_subnets  = module.vpc.private_subnets
 }
