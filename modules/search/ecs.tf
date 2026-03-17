@@ -107,7 +107,7 @@ module "search_task_definition" {
       ]
       effect = "Allow"
       resources = [
-        var.secret_prefix
+        "${var.secret_prefix}:*"
       ]
     },
   ]
