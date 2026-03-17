@@ -54,3 +54,23 @@ module "audio_processing" {
   image_uri        = "${aws_ecr_repository.repos["audio-processing"].repository_url}:latest"
   private_subnets  = module.vpc.private_subnets
 }
+
+
+module "search" {
+  source = "./modules/search"
+
+  name = "${local.name}-search"
+
+  tags = {
+    Environment = terraform.workspace
+    Name        = local.name
+    Workflow    = "search"
+  }
+
+  ecs_cluster_arn            = module.ecs_cluster.arn
+  image_uri                  = "${aws_ecr_repository.repos["search"].repository_url}:latest"
+  alb_security_group_id      = module.alb.security_group_id
+  private_subnets            = module.vpc.private_subnets
+  alb_target_group_arn       = module.alb.target_groups["search"].arn
+  opensearch_domain_endpoint = aws_elasticsearch_domain.main.endpoint
+}
