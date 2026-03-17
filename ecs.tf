@@ -33,7 +33,6 @@ resource "aws_iam_policy" "ecs_task_exec_policy" {
           "ssm:GetParameterHistory"
         ]
         Resource = [
-          aws_ssm_parameter.api_key.arn,
           aws_ssm_parameter.notifications_api_key.arn,
           aws_ssm_parameter.media_private_key.arn
         ]
@@ -205,7 +204,7 @@ module "backend_task_definition" {
         },
         {
           "name" : "API_KEY",
-          "valueFrom" : aws_ssm_parameter.api_key.arn
+          "valueFrom" : "${local.secret_prefix}:API_KEY::"
         },
         {
           "name" : "NOTIFICATIONS_API_KEY_SSM_VALUE",

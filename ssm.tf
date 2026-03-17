@@ -30,12 +30,6 @@ resource "aws_ssm_parameter" "media_private_key" {
   value = tls_private_key.media.private_key_pem
 }
 
-resource "aws_ssm_parameter" "api_key" {
-  name  = "/ufb/${terraform.workspace}/api-key"
-  type  = "String"
-  value = random_password.api_key.result
-}
-
 resource "aws_ssm_parameter" "notifications_api_key" {
   name  = "/ufb/${terraform.workspace}/notifications-api-key"
   type  = "String"
@@ -50,10 +44,6 @@ resource "aws_ssm_parameter" "events_api_key" {
 
 output "media_private_key_secret_name" {
   value = aws_ssm_parameter.media_private_key.name
-}
-
-output "api_key_ssm_name" {
-  value = aws_ssm_parameter.api_key.name
 }
 
 output "notifications_api_key_ssm_name" {
