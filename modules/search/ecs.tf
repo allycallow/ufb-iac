@@ -1,4 +1,4 @@
-module "backend_task_definition" {
+module "search_task_definition" {
   source = "terraform-aws-modules/ecs/aws//modules/service"
 
   name        = var.name
@@ -72,7 +72,7 @@ module "backend_task_definition" {
   load_balancer = {
     service = {
       target_group_arn = var.alb_target_group_arn
-      container_name   = "backend"
+      container_name   = "search"
       container_port   = 8000
     }
   }
@@ -99,6 +99,18 @@ module "backend_task_definition" {
       cidr_ipv4   = "0.0.0.0/0"
     }
   }
+
+  tasks_iam_role_statements = [
+    {
+      actions = [
+        "secretsmanager:GetSecretValue"
+      ]
+      effect = "Allow"
+      resources = [
+        var.secret_prefix
+      ]
+    },
+  ]
 
   create_task_exec_iam_role = true
   task_exec_iam_role_name   = "ecs-ufb-search-task-exec-role"
