@@ -33,7 +33,7 @@ module "search_task_definition" {
       environment = [
         {
           name  = "OPENSEARCH_DOMAIN_ENDPOINT"
-          value = "https://${var.opensearch_domain_endpoint}"
+          value = var.opensearch_domain_endpoint
         },
         {
           name  = "BACKEND_API_ENDPOINT"
@@ -110,6 +110,18 @@ module "search_task_definition" {
         "${var.secret_prefix}:*"
       ]
     },
+    {
+      effect = "Allow"
+      actions = [
+        "es:ESHttpGet",
+        "es:ESHttpPut",
+        "es:ESHttpPost",
+        "es:ESHttpDelete"
+      ]
+      resources = [
+        "arn:aws:es:eu-west-2:081077757258:domain/${terraform.workspace}-ufb/*"
+      ]
+    }
   ]
 
   create_task_exec_iam_role = true
