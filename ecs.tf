@@ -174,7 +174,7 @@ module "backend_task_definition" {
         },
         {
           "name" : "SEARCH_ENDPOINT",
-          "value" : "https://search-api.upfrontbeats.com"
+          "value" : "https://search.upfrontbeats.com"
         },
         {
           "name" : "RUDDER_STACK_DATA_PLANE_URL",
@@ -222,6 +222,10 @@ module "backend_task_definition" {
         {
           "name" : "KNOCK_API_KEY",
           "valueFrom" : "${local.secret_prefix}:knock_api_key::"
+        },
+        {
+          "name" : "SEARCH_API_KEY",
+          "valueFrom" : "${local.secret_prefix}:SEARCH_API_KEY::"
         },
       ]
     }
