@@ -13,7 +13,8 @@ resource "aws_iam_policy" "search_ecs_task_exec_policy" {
           "secretsmanager:DescribeSecret"
         ]
         Resource = [
-          "${var.secret_prefix}:*"
+          "${var.secret_prefix}:*",
+          var.secret_prefix
         ]
       },
       {
