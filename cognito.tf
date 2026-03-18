@@ -4,7 +4,8 @@ resource "aws_cognito_user_pool" "pool" {
   auto_verified_attributes = ["email"]
 
   lambda_config {
-    post_confirmation = "arn:aws:lambda:eu-west-2:081077757258:function:production-ufb-post-confirmation"
+    post_confirmation = "arn:aws:lambda:eu-west-2:${data.aws_caller_identity.current.account_id}:function:production-ufb-post-confirmation"
+    pre_sign_up       = "arn:aws:lambda:eu-west-2:${data.aws_caller_identity.current.account_id}:function:production-ufb-pre-signup"
   }
 
   account_recovery_setting {
