@@ -32,8 +32,12 @@ module "audio_processing_task_definition" {
 
       secrets = [
         {
-          name      = "DRM_KEY_SERVER_URL",
-          valueFrom = "arn:aws:secretsmanager:eu-west-2:${data.aws_caller_identity.current.account_id}:secret:prod/ufb/audio-processing-8b85Fv:DRM_KEY_SERVER_URL::"
+          name      = "EZDRM_USER",
+          valueFrom = "arn:aws:secretsmanager:eu-west-2:${data.aws_caller_identity.current.account_id}:secret:prod/ufb/audio-processing-8b85Fv:EZDRM_USER::"
+        },
+        {
+          name      = "EZDRM_PASS",
+          valueFrom = "arn:aws:secretsmanager:eu-west-2:${data.aws_caller_identity.current.account_id}:secret:prod/ufb/audio-processing-8b85Fv:EZDRM_PASS::"
         },
       ]
 

@@ -6,6 +6,31 @@ data "aws_cloudfront_cache_policy" "this" {
   name = "Managed-CachingOptimized"
 }
 
+resource "aws_cloudfront_cache_policy" "audio_segments" {
+  name    = "${terraform.workspace}-audio-segments-no-cache"
+  comment = "Zero-TTL for encrypted CMAF segments. Prevents 304s that break DRM session decryption."
+
+  default_ttl = 0
+  min_ttl     = 0
+  max_ttl     = 0
+
+  parameters_in_cache_key_and_forwarded_to_origin {
+    enable_accept_encoding_brotli = false
+    enable_accept_encoding_gzip   = false
+
+    cookies_config {
+      cookie_behavior = "none"
+    }
+
+    headers_config {
+      header_behavior = "none"
+    }
+
+    query_strings_config {
+      query_string_behavior = "none"
+    }
+  }
+}
 
 resource "aws_cloudfront_response_headers_policy" "custom" {
   name    = "${terraform.workspace}-CORS-With-Preflight"
@@ -26,7 +51,8 @@ resource "aws_cloudfront_response_headers_policy" "custom" {
       items = [
         "https://*.${local.domain}",
         "https://${local.domain}",
-        "https://local.${local.domain}:3000"
+        "https://local.${local.domain}:3000",
+        "https://local.${local.domain}:3001",
       ]
     }
 
@@ -99,19 +125,17 @@ resource "aws_cloudfront_distribution" "media" {
     cache_policy_id          = data.aws_cloudfront_cache_policy.this.id
   }
 
+  # Audio — zero-TTL, signed cookies, no inline TTL fields (conflict with cache_policy_id)
   ordered_cache_behavior {
     path_pattern               = "/audio/*"
     allowed_methods            = ["GET", "HEAD", "OPTIONS"]
     cached_methods             = ["GET", "HEAD", "OPTIONS"]
     target_origin_id           = aws_s3_bucket.media.id
-    min_ttl                    = 0
-    default_ttl                = 3600
-    max_ttl                    = 86400
     compress                   = true
     viewer_protocol_policy     = "redirect-to-https"
     trusted_key_groups         = [aws_cloudfront_key_group.cf_media_keygroup.id]
     origin_request_policy_id   = data.aws_cloudfront_origin_request_policy.this.id
-    cache_policy_id            = data.aws_cloudfront_cache_policy.this.id
+    cache_policy_id            = aws_cloudfront_cache_policy.audio_segments.id
     response_headers_policy_id = aws_cloudfront_response_headers_policy.custom.id
   }
 
@@ -161,7 +185,6 @@ resource "aws_cloudfront_distribution" "media" {
     cache_policy_id          = data.aws_cloudfront_cache_policy.this.id
   }
 }
-
 
 resource "aws_cloudfront_distribution" "frontend" {
   enabled      = true
@@ -267,7 +290,6 @@ resource "aws_cloudfront_distribution" "frontend" {
     }
   }
 }
-
 
 output "cloudfront_dist_media_id" {
   value = aws_cloudfront_distribution.media.id
