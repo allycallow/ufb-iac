@@ -538,24 +538,24 @@ module "airflow_task_definition" {
         "arn:aws:s3:::ufb-db-exports",
         "arn:aws:s3:::prod-recommendations-formatted",
         "arn:aws:s3:::prod-recommendations-processed",
-        "arn:aws:s3:::ufb-prod-outputs",
+        "arn:aws:s3:::ufb-prod-outputs"
       ]
     },
     {
-      "effect" = "Allow",
-      "actions" = [
+      effect = "Allow"
+      actions = [
         "sagemaker:*",
         "logs:*"
-      ],
-      "resources" = [
-        "*"
       ]
+      resources = ["*"]
     },
+
+    # Allow SageMaker jobs
     {
       effect  = "Allow"
       actions = ["iam:PassRole"]
       resources = [
-        "arn:aws:iam::081077757258:role/TrainAndBatchTransform-SageMakerAPIExecutionRole"
+        "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/TrainAndBatchTransform-SageMakerAPIExecutionRole"
       ]
       condition = [{
         test     = "StringEquals"
@@ -563,16 +563,53 @@ module "airflow_task_definition" {
         values   = ["sagemaker.amazonaws.com"]
       }]
     },
+
+    # Allow Airflow to run ECS audio processing tasks
     {
-      effect  = "Allow"
-      actions = ["dynamodb:PutItem", "dynamodb:UpdateItem"]
+      effect = "Allow"
+      actions = [
+        "ecs:RunTask"
+      ]
       resources = [
-        "arn:aws:dynamodb:eu-west-2:081077757258:table/production-ufb-recommendations"
+        "arn:aws:ecs:eu-west-2:${data.aws_caller_identity.current.account_id}:task-definition/production-audio-processing:*"
       ]
     },
+
+    # Allow passing the AUDIO PROCESSING TASK ROLE
     {
       effect  = "Allow"
-      actions = ["sqs:GetMessage", "sqs:DeleteMessage", "sqs:ChangeMessageVisibility", "sqs:ReceiveMessage"]
+      actions = ["iam:PassRole"]
+      resources = [
+        "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/production-audio-processing-tasks-*"
+      ]
+      condition = [{
+        test     = "StringEquals"
+        variable = "iam:PassedToService"
+        values   = ["ecs-tasks.amazonaws.com"]
+      }]
+    },
+
+    # DynamoDB permissions
+    {
+      effect = "Allow"
+      actions = [
+        "dynamodb:PutItem",
+        "dynamodb:UpdateItem"
+      ]
+      resources = [
+        "arn:aws:dynamodb:eu-west-2:${data.aws_caller_identity.current.account_id}:table/production-ufb-recommendations"
+      ]
+    },
+
+    # SQS permissions
+    {
+      effect = "Allow"
+      actions = [
+        "sqs:GetMessage",
+        "sqs:DeleteMessage",
+        "sqs:ChangeMessageVisibility",
+        "sqs:ReceiveMessage"
+      ]
       resources = [
         module.audio_processing.queue_arn,
         module.audio_processing.dlq_arn
