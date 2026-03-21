@@ -568,18 +568,21 @@ module "airflow_task_definition" {
     {
       effect = "Allow"
       actions = [
-        "ecs:RunTask"
+        "ecs:RunTask",
+        "ecs:DescribeTasks" # Add this action
       ]
       resources = [
-        "arn:aws:ecs:eu-west-2:${data.aws_caller_identity.current.account_id}:task-definition/production-audio-processing:*"
+        "arn:aws:ecs:eu-west-2:${data.aws_caller_identity.current.account_id}:task-definition/production-audio-processing:*",
+        "arn:aws:ecs:eu-west-2:${data.aws_caller_identity.current.account_id}:task/production-ufb/*",
       ]
     },
 
     # Allow passing the AUDIO PROCESSING TASK ROLE
     {
       effect  = "Allow"
-      actions = ["iam:PassRole"]
+      actions = ["iam:PassRole", "ecs:DescribeTasks"]
       resources = [
+        "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/ecs-audio-processing-task-exec-role-*",
         "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/production-audio-processing-tasks-*"
       ]
       condition = [{
