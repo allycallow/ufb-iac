@@ -464,6 +464,10 @@ module "airflow_task_definition" {
           name      = "AIRFLOW__API__SECRET_KEY"
           valueFrom = "arn:aws:secretsmanager:eu-west-2:${data.aws_caller_identity.current.account_id}:secret:prod/ufb/airflow-JDJfSg:AIRFLOW__API__SECRET_KEY::"
         },
+        {
+          name      = "GEMINI_API_KEY"
+          valueFrom = "arn:aws:secretsmanager:eu-west-2:${data.aws_caller_identity.current.account_id}:secret:prod/ufb/airflow-JDJfSg:GEMINI_API_KEY::"
+        },
       ]
 
       logConfiguration = {
