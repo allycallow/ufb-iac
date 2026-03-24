@@ -449,6 +449,10 @@ module "airflow_task_definition" {
           name  = "AIRFLOW__AWS_AUTH_MANAGER__REGION_NAME"
           value = "eu-west-2"
         },
+        {
+          name  = "BACKEND_API_ENDPOINT"
+          value = "https://new-admin.upfrontbeats.com/api"
+        }
       ]
 
       secrets = [
@@ -467,6 +471,10 @@ module "airflow_task_definition" {
         {
           name      = "GEMINI_API_KEY"
           valueFrom = "arn:aws:secretsmanager:eu-west-2:${data.aws_caller_identity.current.account_id}:secret:prod/ufb/airflow-JDJfSg:GEMINI_API_KEY::"
+        },
+        {
+          name      = "BACKEND_API_KEY"
+          valueFrom = "arn:aws:secretsmanager:eu-west-2:${data.aws_caller_identity.current.account_id}:secret:prod/ufb/airflow-JDJfSg:BACKEND_API_KEY::"
         },
       ]
 
