@@ -21,10 +21,11 @@ resource "aws_dynamodb_table" "notifications" {
 }
 
 resource "aws_dynamodb_table" "recommendations" {
-  name         = "${local.name}-recommendations"
-  billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "PK"
-  range_key    = "SK"
+  name                        = "${local.name}-recommendations"
+  billing_mode                = "PAY_PER_REQUEST"
+  hash_key                    = "PK"
+  range_key                   = "SK"
+  deletion_protection_enabled = true
 
   attribute {
     name = "PK"
