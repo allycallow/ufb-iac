@@ -160,7 +160,7 @@ module "backend_task_definition" {
         },
         {
           "name" : "RECOMMENDATIONS_ENDPOINT",
-          "value" : "https://y574l70d92.execute-api.eu-west-2.amazonaws.com/production"
+          "value" : "https://recommendations.upfrontbeats.com"
         },
         {
           "name" : "NOTIFICATIONS_ENDPOINT",
@@ -444,6 +444,10 @@ module "airflow_task_definition" {
         {
           name  = "AIRFLOW__CORE__AUTH_MANAGER"
           value = "airflow.providers.amazon.aws.auth_manager.aws_auth_manager.AwsAuthManager"
+        },
+        {
+          name  = "AIRFLOW__CORE__ALLOWED_DESERIALIZATION_CLASSES"
+          value = "google.genai.types.*"
         },
         {
           name  = "AIRFLOW__AWS_AUTH_MANAGER__REGION_NAME"
