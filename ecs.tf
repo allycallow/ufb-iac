@@ -163,10 +163,6 @@ module "backend_task_definition" {
           "value" : "https://recommendations.upfrontbeats.com"
         },
         {
-          "name" : "NOTIFICATIONS_ENDPOINT",
-          "value" : "https://notifications-api.upfrontbeats.com"
-        },
-        {
           "name" : "REDIS_HOST",
           "value" : "${aws_elasticache_cluster.redis.cache_nodes[0].address}"
         },
