@@ -119,7 +119,7 @@ module "search_task_definition" {
         "es:ESHttpDelete"
       ]
       resources = [
-        "arn:aws:es:eu-west-2:081077757258:domain/${terraform.workspace}-ufb/*"
+        "${var.opensearch_domain_arn}/*"
       ]
     }
   ]

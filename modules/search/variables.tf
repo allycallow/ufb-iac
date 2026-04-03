@@ -43,6 +43,11 @@ variable "opensearch_domain_endpoint" {
 
 }
 
+variable "opensearch_domain_arn" {
+  description = "ARN of the OpenSearch domain"
+  type        = string
+}
+
 variable "secret_prefix" {
   description = "ARN prefix for Secrets Manager secrets (e.g. arn:aws:secretsmanager:region:account-id:secret:secret-name)"
   type        = string

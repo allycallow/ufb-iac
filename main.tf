@@ -73,5 +73,6 @@ module "search" {
   private_subnets            = module.vpc.private_subnets
   alb_target_group_arn       = module.alb.target_groups["search"].arn
   opensearch_domain_endpoint = aws_opensearch_domain.main.endpoint
+  opensearch_domain_arn      = aws_opensearch_domain.main.arn
   event_bus_name             = module.eventbridge.eventbridge_bus_arn
 }
