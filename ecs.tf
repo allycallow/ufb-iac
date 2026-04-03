@@ -305,6 +305,9 @@ module "frontend_task_definition" {
   name        = "${local.name}-frontend"
   cluster_arn = module.ecs_cluster.arn
 
+  cpu    = 512
+  memory = 1024
+
   runtime_platform = {
     cpu_architecture        = "ARM64"
     operating_system_family = "LINUX"
@@ -312,8 +315,8 @@ module "frontend_task_definition" {
 
   container_definitions = {
     frontend = {
-      cpu                    = 1024
-      memory                 = 2048
+      cpu                    = 512
+      memory                 = 1024
       essential              = true
       image                  = "${aws_ecr_repository.repos["frontend"].repository_url}:latest"
       user                   = "0"

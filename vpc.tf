@@ -11,7 +11,7 @@ module "vpc" {
   elasticache_subnets = [for k, v in local.azs : cidrsubnet(local.vpc_cidr, 8, k + 12)]
 
   enable_nat_gateway = true
-  enable_vpn_gateway = true
+  enable_vpn_gateway = false
   single_nat_gateway = true
 
   create_database_subnet_group = true
