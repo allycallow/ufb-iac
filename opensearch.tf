@@ -1,10 +1,9 @@
-resource "aws_elasticsearch_domain" "main" {
-  domain_name = local.name
-
-  elasticsearch_version = "7.10"
+resource "aws_opensearch_domain" "main" {
+  domain_name    = "ufb-production"
+  engine_version = "OpenSearch_2.11"
 
   cluster_config {
-    instance_type  = "t3.small.elasticsearch"
+    instance_type  = "t3.small.search"
     instance_count = 1
   }
 
@@ -16,11 +15,15 @@ resource "aws_elasticsearch_domain" "main" {
   ebs_options {
     ebs_enabled = true
     volume_size = 10
-    volume_type = "gp2"
+    volume_type = "gp3"
+    iops        = 3000
+    throughput  = 125
   }
 
   advanced_options = {
     "rest.action.multi.allow_explicit_index" = "true"
+    "indices.fielddata.cache.size"           = "20"
+    "indices.query.bool.max_clause_count"    = "1024"
   }
 
   node_to_node_encryption {
@@ -34,5 +37,5 @@ resource "aws_elasticsearch_domain" "main" {
 }
 
 output "opensearch_domain_endpoint" {
-  value = aws_elasticsearch_domain.main.endpoint
+  value = aws_opensearch_domain.main.endpoint
 }
