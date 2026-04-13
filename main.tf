@@ -76,3 +76,21 @@ module "search" {
   opensearch_domain_arn      = aws_opensearch_domain.main.arn
   event_bus_name             = module.eventbridge.eventbridge_bus_arn
 }
+
+module "track_metadata_processing" {
+  source = "./modules/track-metadata"
+
+  name = "${local.name}-tm-processing"
+
+  tags = {
+    Environment = terraform.workspace
+    Name        = local.name
+    Workflow    = "tm-processing"
+  }
+
+  media_bucket_arn = aws_s3_bucket.media.arn
+  media_bucket_id  = aws_s3_bucket.media.id
+  ecs_cluster_arn  = module.ecs_cluster.arn
+  image_uri        = "${aws_ecr_repository.repos["track-metadata"].repository_url}:latest"
+  private_subnets  = module.vpc.private_subnets
+}
