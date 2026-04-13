@@ -6,7 +6,7 @@ resource "aws_cloudwatch_log_group" "track_metadata_processing" {
 module "track_metadata_processing_task_definition" {
   source = "terraform-aws-modules/ecs/aws//modules/service"
 
-  name        = "${terraform.workspace}-tm-processing"
+  name        = var.name
   cluster_arn = var.ecs_cluster_arn
 
   create_service = false
