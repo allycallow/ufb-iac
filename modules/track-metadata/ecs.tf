@@ -17,20 +17,30 @@ module "track_metadata_processing_task_definition" {
   }
 
   cpu    = 512
-  memory = 1024
+  memory = 2048
 
   container_definitions = {
     tm-processing = {
       cpu                    = 512
-      memory                 = 1024
+      memory                 = 2048
       essential              = true
       image                  = var.image_uri
       user                   = "0"
       readonlyRootFilesystem = false
 
-      environment = []
+      environment = [
+        {
+          name  = "BACKEND_ENDPOINT"
+          value = "https://new-admin.upfrontbeats.com"
+        }
+      ]
 
-      secrets = []
+      secrets = [
+        {
+          name      = "BACKEND_API_KEY"
+          valueFrom = "arn:aws:secretsmanager:eu-west-2:${data.aws_caller_identity.current.account_id}:secret:prod/ufb/backend-NKRahZ:API_KEY::"
+        }
+      ]
 
       logConfiguration = {
         logDriver = "awslogs"
