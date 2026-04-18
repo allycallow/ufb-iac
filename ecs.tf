@@ -436,25 +436,37 @@ module "airflow_task_definition" {
           name  = "AIRFLOW__API__EXPOSE_CONFIG"
           value = "False"
         },
-        {
-          name  = "AIRFLOW__AWS_AUTH_MANAGER__SAML_METADATA_URL"
-          value = "https://portal.sso.eu-west-2.amazonaws.com/saml/metadata/MDgxMDc3NzU3MjU4X2lucy03NTM1N2QxZTNmNjE3MjBl"
-        },
-        {
-          name  = "AIRFLOW__CORE__AUTH_MANAGER"
-          value = "airflow.providers.amazon.aws.auth_manager.aws_auth_manager.AwsAuthManager"
-        },
+        # {
+        #   name  = "AIRFLOW__AWS_AUTH_MANAGER__SAML_METADATA_URL"
+        #   value = "https://portal.sso.eu-west-2.amazonaws.com/saml/metadata/MDgxMDc3NzU3MjU4X2lucy03NTM1N2QxZTNmNjE3MjBl"
+        # },
+        # {
+        #   name  = "AIRFLOW__CORE__AUTH_MANAGER"
+        #   value = "airflow.providers.amazon.aws.auth_manager.aws_auth_manager.AwsAuthManager"
+        # },
+        # {
+        #   name  = "AIRFLOW__AWS_AUTH_MANAGER__REGION_NAME"
+        #   value = "eu-west-2"
+        # },
         {
           name  = "AIRFLOW__CORE__ALLOWED_DESERIALIZATION_CLASSES"
           value = "google.genai.types.*"
         },
         {
-          name  = "AIRFLOW__AWS_AUTH_MANAGER__REGION_NAME"
-          value = "eu-west-2"
+          name  = "_AIRFLOW_WWW_USER_CREATE"
+          value = "true"
+        },
+        {
+          name  = "AIRFLOW__CORE__AUTH_MANAGER"
+          value = "airflow.providers.fab.auth_manager.fab_auth_manager.FabAuthManager"
         },
         {
           name  = "BACKEND_API_ENDPOINT"
           value = "https://new-admin.upfrontbeats.com/api"
+        },
+        {
+          name  = "_AIRFLOW_WWW_USER_USERNAME"
+          value = "admin"
         }
       ]
 
@@ -478,6 +490,10 @@ module "airflow_task_definition" {
         {
           name      = "BACKEND_API_KEY"
           valueFrom = "arn:aws:secretsmanager:eu-west-2:${data.aws_caller_identity.current.account_id}:secret:prod/ufb/airflow-JDJfSg:BACKEND_API_KEY::"
+        },
+        {
+          name      = "_AIRFLOW_WWW_USER_PASSWORD"
+          valueFrom = "arn:aws:secretsmanager:eu-west-2:${data.aws_caller_identity.current.account_id}:secret:prod/ufb/airflow-JDJfSg:_AIRFLOW_WWW_USER_PASSWORD::"
         },
       ]
 
@@ -579,26 +595,43 @@ module "airflow_task_definition" {
       }]
     },
 
-    # Allow Airflow to run ECS audio processing tasks
+    # Allow Airflow to run ECS tasks
     {
       effect = "Allow"
       actions = [
         "ecs:RunTask",
-        "ecs:DescribeTasks" # Add this action
+        "ecs:DescribeTasks"
       ]
       resources = [
         "arn:aws:ecs:eu-west-2:${data.aws_caller_identity.current.account_id}:task-definition/production-audio-processing:*",
+        "arn:aws:ecs:eu-west-2:${data.aws_caller_identity.current.account_id}:task-definition/production-ufb-tm-processing:*",
         "arn:aws:ecs:eu-west-2:${data.aws_caller_identity.current.account_id}:task/production-ufb/*",
       ]
     },
 
-    # Allow passing the AUDIO PROCESSING TASK ROLE
+    # Allow passing the TASK ROLE
     {
       effect  = "Allow"
       actions = ["iam:PassRole", "ecs:DescribeTasks"]
       resources = [
         "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/ecs-audio-processing-task-exec-role-*",
-        "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/production-audio-processing-tasks-*"
+        "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/ecs-tm-task-exec-role-*",
+        "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/production-audio-processing-tasks-*",
+        "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/production-ufb-tm-processing-tasks-*"
+      ]
+      condition = [{
+        test     = "StringEquals"
+        variable = "iam:PassedToService"
+        values   = ["ecs-tasks.amazonaws.com"]
+      }]
+    },
+
+    # Allow passing the TRACK METADATA PROCESSING TASK ROLE
+    {
+      effect  = "Allow"
+      actions = ["iam:PassRole"]
+      resources = [
+        "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/production-ufb-tm-processing-tasks-*"
       ]
       condition = [{
         test     = "StringEquals"
