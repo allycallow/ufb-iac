@@ -122,6 +122,28 @@ module "alb" {
 
       create_attachment = false
     }
+
+    recommendations = {
+      backend_protocol                  = "HTTP"
+      backend_port                      = 8080
+      target_type                       = "ip"
+      deregistration_delay              = 5
+      load_balancing_cross_zone_enabled = true
+
+      health_check = {
+        enabled             = true
+        healthy_threshold   = 3
+        interval            = 15
+        matcher             = "200-399"
+        path                = "/"
+        port                = "traffic-port"
+        protocol            = "HTTP"
+        timeout             = 5
+        unhealthy_threshold = 2
+      }
+
+      create_attachment = false
+    }
   }
 
   listeners = {
@@ -194,6 +216,19 @@ module "alb" {
           actions = [{
             type             = "forward"
             target_group_key = "search"
+          }]
+        }
+
+        recommendations = {
+          priority = 5
+          conditions = [{
+            host_header = {
+              values = ["recommendations.upfrontbeats.com"]
+            }
+          }]
+          actions = [{
+            type             = "forward"
+            target_group_key = "recommendations"
           }]
         }
       }

@@ -94,3 +94,21 @@ module "track_metadata_processing" {
   image_uri        = "${aws_ecr_repository.repos["track-metadata"].repository_url}:latest"
   private_subnets  = module.vpc.private_subnets
 }
+
+module "recommendations" {
+  source = "./modules/recommendations"
+
+  name = "${local.name}-recommendations"
+
+  tags = {
+    Environment = terraform.workspace
+    Name        = local.name
+    Workflow    = "recommendations"
+  }
+
+  ecs_cluster_arn       = module.ecs_cluster.arn
+  image_uri             = "${aws_ecr_repository.repos["recommendations"].repository_url}:latest"
+  alb_security_group_id = module.alb.security_group_id
+  private_subnets       = module.vpc.private_subnets
+  alb_target_group_arn  = module.alb.target_groups["recommendations"].arn
+}
