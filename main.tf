@@ -111,4 +111,5 @@ module "recommendations" {
   alb_security_group_id = module.alb.security_group_id
   private_subnets       = module.vpc.private_subnets
   alb_target_group_arn  = module.alb.target_groups["recommendations"].arn
+  table_name            = aws_dynamodb_table.recommendations.name
 }

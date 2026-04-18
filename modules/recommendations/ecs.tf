@@ -98,6 +98,15 @@ module "recommendations_task_definition" {
         "${var.secret_prefix}:*"
       ]
     },
+    {
+      effect = "Allow"
+      actions = [
+        "dynamodb:Query"
+      ]
+      resources = [
+        "arn:aws:dynamodb:eu-west-2:${data.aws_caller_identity.current.account_id}:table/${var.table_name}"
+      ]
+    }
   ]
 
   create_task_exec_iam_role = true

@@ -25,7 +25,6 @@ resource "aws_iam_policy" "recommendations_ecs_task_exec_policy" {
         ]
         Resource = "*"
       },
-
     ]
   })
 }

@@ -42,3 +42,9 @@ variable "secret_prefix" {
   type        = string
   default     = "arn:aws:secretsmanager:eu-west-2:081077757258:secret:prod/ufb/recommendations-sQbkXb"
 }
+
+variable "table_name" {
+  description = "Name of the DynamoDB table to store recommendations"
+  type        = string
+  default     = "ufb-recommendations"
+}
