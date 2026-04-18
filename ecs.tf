@@ -91,8 +91,9 @@ module "ecs_cluster" {
 module "backend_task_definition" {
   source = "terraform-aws-modules/ecs/aws//modules/service"
 
-  name        = "${local.name}-backend"
-  cluster_arn = module.ecs_cluster.arn
+  name                 = "${local.name}-backend"
+  cluster_arn          = module.ecs_cluster.arn
+  force_new_deployment = false
 
   runtime_platform = {
     cpu_architecture        = "ARM64"
@@ -302,8 +303,9 @@ module "backend_task_definition" {
 module "frontend_task_definition" {
   source = "terraform-aws-modules/ecs/aws//modules/service"
 
-  name        = "${local.name}-frontend"
-  cluster_arn = module.ecs_cluster.arn
+  name                 = "${local.name}-frontend"
+  cluster_arn          = module.ecs_cluster.arn
+  force_new_deployment = false
 
   cpu    = 512
   memory = 1024
@@ -390,8 +392,10 @@ module "frontend_task_definition" {
 module "airflow_task_definition" {
   source = "terraform-aws-modules/ecs/aws//modules/service"
 
-  name        = "${local.name}-airflow"
-  cluster_arn = module.ecs_cluster.arn
+  name                 = "${local.name}-airflow"
+  cluster_arn          = module.ecs_cluster.arn
+  force_new_deployment = false
+
 
   runtime_platform = {
     cpu_architecture        = "ARM64"
