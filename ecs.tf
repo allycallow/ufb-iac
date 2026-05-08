@@ -287,7 +287,7 @@ module "backend_task_definition" {
       ]
       effect = "Allow"
       resources = [
-        "arn:aws:secretsmanager:eu-west-2:081077757258:secret:prod/ufb/backend-NKRahZ*"
+        "arn:aws:secretsmanager:eu-west-2:${data.aws_caller_identity.current.account_id}:secret:prod/ufb/backend-NKRahZ*"
       ]
     },
     {
@@ -295,6 +295,13 @@ module "backend_task_definition" {
       effect  = "Allow"
       resources = [
         aws_cognito_user_pool.pool.arn
+      ]
+    },
+    {
+      actions = ["dynamodb:PutItem", "dynamodb:UpdateItem", "dynamodb:GetItem"]
+      effect  = "Allow"
+      resources = [
+        "arn:aws:dynamodb:eu-west-2:${data.aws_caller_identity.current.account_id}:table/production-ufb-recently-played"
       ]
     }
   ]
