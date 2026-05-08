@@ -113,3 +113,13 @@ module "recommendations" {
   alb_target_group_arn  = module.alb.target_groups["recommendations"].arn
   table_name            = aws_dynamodb_table.recommendations.name
 }
+
+module "recently-played" {
+  source = "./modules/recently-played"
+  name   = "${local.name}-recently-played"
+  tags = {
+    Environment = terraform.workspace
+    Name        = local.name
+    Workflow    = "recently-played"
+  }
+}
