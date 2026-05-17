@@ -22,7 +22,6 @@ variable "alb_security_group_id" {
 variable "private_subnets" {
   description = "List of private subnet IDs for the ECS service"
   type        = list(string)
-
 }
 
 variable "tags" {

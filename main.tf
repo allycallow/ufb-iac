@@ -117,9 +117,28 @@ module "recommendations" {
 module "recently-played" {
   source = "./modules/recently-played"
   name   = "${local.name}-recently-played"
+
   tags = {
     Environment = terraform.workspace
     Name        = local.name
     Workflow    = "recently-played"
   }
+}
+
+module "monitoring" {
+  source = "./modules/monitoring"
+
+  name = "${local.name}-monitoring"
+
+  tags = {
+    Environment = terraform.workspace
+    Name        = local.name
+    Workflow    = "monitoring"
+  }
+
+
+  ecs_cluster_arn       = module.ecs_cluster.arn
+  alb_security_group_id = module.alb.security_group_id
+  private_subnets       = module.vpc.private_subnets
+  alb_target_group_arn  = module.alb.target_groups["monitoring"].arn
 }
