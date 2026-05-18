@@ -9,10 +9,35 @@ module "monitoring_service" {
 
   container_definitions = {
     prometheus = {
-      cpu       = 512
-      memory    = 1024
-      image     = "prom/prometheus:latest"
-      essential = true
+      cpu                    = 512
+      memory                 = 1024
+      image                  = "prom/prometheus:latest"
+      essential              = true
+      readonlyRootFilesystem = false
+      entryPoint             = ["/bin/sh", "-ec"]
+      command = [<<-EOT
+        cat <<'EOF' >/etc/prometheus/prometheus.yml
+        global:
+          scrape_interval: 15s
+
+        scrape_configs:
+          - job_name: prometheus
+            static_configs:
+              - targets: ['localhost:9090']
+
+          - job_name: backend
+            metrics_path: /metrics
+            scheme: https
+            static_configs:
+              - targets: ['new-admin.upfrontbeats.com']
+        EOF
+
+        exec /bin/prometheus \
+          --config.file=/etc/prometheus/prometheus.yml \
+          --storage.tsdb.path=/prometheus \
+          --web.console.libraries=/usr/share/prometheus/console_libraries \
+          --web.console.templates=/usr/share/prometheus/consoles
+      EOT]
       portMappings = [
         {
           name          = "prometheus"

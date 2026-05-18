@@ -242,6 +242,15 @@ module "backend_task_definition" {
       description                  = "Allow traffic from ALB"
       referenced_security_group_id = module.alb.security_group_id
     }
+
+    monitoring_ingress_8000 = {
+      type                         = "ingress"
+      from_port                    = 8000
+      to_port                      = 8000
+      protocol                     = "tcp"
+      description                  = "Allow traffic from monitoring service"
+      referenced_security_group_id = module.monitoring.security_group_id
+    }
   }
 
 
