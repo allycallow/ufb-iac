@@ -92,51 +92,6 @@ resource "aws_service_discovery_private_dns_namespace" "ecs" {
   vpc  = module.vpc.vpc_id
 }
 
-resource "aws_service_discovery_service" "backend" {
-  name = "backend"
-
-  dns_config {
-    namespace_id   = aws_service_discovery_private_dns_namespace.ecs.id
-    routing_policy = "MULTIVALUE"
-
-    dns_records {
-      ttl  = 10
-      type = "A"
-    }
-  }
-
-}
-
-resource "aws_service_discovery_service" "search" {
-  name = "search"
-
-  dns_config {
-    namespace_id   = aws_service_discovery_private_dns_namespace.ecs.id
-    routing_policy = "MULTIVALUE"
-
-    dns_records {
-      ttl  = 10
-      type = "A"
-    }
-  }
-
-}
-
-resource "aws_service_discovery_service" "recommendations" {
-  name = "recommendations"
-
-  dns_config {
-    namespace_id   = aws_service_discovery_private_dns_namespace.ecs.id
-    routing_policy = "MULTIVALUE"
-
-    dns_records {
-      ttl  = 10
-      type = "A"
-    }
-  }
-
-}
-
 
 module "backend_task_definition" {
   source = "terraform-aws-modules/ecs/aws//modules/service"
@@ -211,11 +166,11 @@ module "backend_task_definition" {
         },
         {
           "name" : "RECOMMENDATIONS_ENDPOINT",
-          "value" : "http://${aws_service_discovery_service.recommendations.name}.${aws_service_discovery_private_dns_namespace.ecs.name}:8000"
+          "value" : "http://recommendations:8000"
         },
         {
           "name" : "SEARCH_ENDPOINT",
-          "value" : "http://${aws_service_discovery_service.search.name}.${aws_service_discovery_private_dns_namespace.ecs.name}:8000/api"
+          "value" : "http://search:8000/api"
         },
         {
           "name" : "RUDDER_STACK_DATA_PLANE_URL",
@@ -283,9 +238,17 @@ module "backend_task_definition" {
     }
   }
 
-  service_registries = {
-    registry_arn   = aws_service_discovery_service.backend.arn
-    container_name = "backend"
+  service_connect_configuration = {
+    enabled   = true
+    namespace = aws_service_discovery_private_dns_namespace.ecs.name
+    service = [{
+      port_name      = "backend"
+      discovery_name = "backend-sc"
+      client_alias = {
+        dns_name = "backend"
+        port     = 8000
+      }
+    }]
   }
 
   security_group_ingress_rules = {
@@ -424,7 +387,7 @@ module "frontend_task_definition" {
         },
         {
           "name" : "REACT_APP_ENDPOINT",
-          "value" : "http://${aws_service_discovery_service.backend.name}.${aws_service_discovery_private_dns_namespace.ecs.name}:8000/graphql"
+          "value" : "http://backend:8000/graphql"
         },
       ]
 
@@ -441,6 +404,11 @@ module "frontend_task_definition" {
       container_name   = "frontend"
       container_port   = 3000
     }
+  }
+
+  service_connect_configuration = {
+    enabled   = true
+    namespace = aws_service_discovery_private_dns_namespace.ecs.name
   }
 
   security_group_ingress_rules = {

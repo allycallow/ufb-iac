@@ -65,9 +65,17 @@ module "recommendations_task_definition" {
     }
   }
 
-  service_registries = {
-    registry_arn   = var.service_registry_arn
-    container_name = "recommendations"
+  service_connect_configuration = {
+    enabled   = true
+    namespace = var.service_connect_namespace
+    service = [{
+      port_name      = "recommendations"
+      discovery_name = "recommendations-sc"
+      client_alias = {
+        dns_name = "recommendations"
+        port     = 8000
+      }
+    }]
   }
 
   security_group_ingress_rules = {
