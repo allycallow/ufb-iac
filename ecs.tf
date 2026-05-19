@@ -98,7 +98,7 @@ module "backend_task_definition" {
 
   name                 = "${local.name}-backend"
   cluster_arn          = module.ecs_cluster.arn
-  force_new_deployment = false
+  force_new_deployment = true
 
   runtime_platform = {
     cpu_architecture        = "ARM64"
@@ -348,7 +348,7 @@ module "frontend_task_definition" {
 
   name                 = "${local.name}-frontend"
   cluster_arn          = module.ecs_cluster.arn
-  force_new_deployment = false
+  force_new_deployment = true
 
   cpu    = 1024 # 1 vCPU
   memory = 2048 # 2 GB RAM
