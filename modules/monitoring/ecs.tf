@@ -37,7 +37,8 @@ module "monitoring_service" {
           --storage.tsdb.path=/prometheus \
           --web.console.libraries=/usr/share/prometheus/console_libraries \
           --web.console.templates=/usr/share/prometheus/consoles
-      EOT]
+      EOT
+      ]
       portMappings = [
         {
           name          = "prometheus"
@@ -68,7 +69,8 @@ module "monitoring_service" {
   }
 
   subnet_ids               = var.private_subnets
-  autoscaling_max_capacity = 2
+  autoscaling_max_capacity = 1
+  desired_count            = 1
 
   load_balancer = {
     service = {
