@@ -14,7 +14,7 @@ module "monitoring_service" {
       image                  = "prom/prometheus:latest"
       essential              = true
       readonlyRootFilesystem = false
-      entryPoint             = ["/bin/sh", "-ec"]
+      entrypoint             = ["/bin/sh", "-ec"]
       command = [<<-EOT
         cat <<'EOF' >/etc/prometheus/prometheus.yml
         global:
