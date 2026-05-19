@@ -65,6 +65,11 @@ module "recommendations_task_definition" {
     }
   }
 
+  service_registries = {
+    registry_arn   = var.service_registry_arn
+    container_name = "recommendations"
+  }
+
   security_group_ingress_rules = {
     alb_ingress_8000 = {
       type                         = "ingress"
@@ -73,6 +78,15 @@ module "recommendations_task_definition" {
       protocol                     = "tcp"
       description                  = "Allow traffic from ALB"
       referenced_security_group_id = var.alb_security_group_id
+    }
+
+    backend_ingress_8000 = {
+      type                         = "ingress"
+      from_port                    = 8000
+      to_port                      = 8000
+      protocol                     = "tcp"
+      description                  = "Allow traffic from backend service"
+      referenced_security_group_id = var.backend_security_group_id
     }
   }
 

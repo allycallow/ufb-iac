@@ -70,8 +70,10 @@ module "search" {
   ecs_cluster_arn            = module.ecs_cluster.arn
   image_uri                  = "${aws_ecr_repository.repos["search"].repository_url}:latest"
   alb_security_group_id      = module.alb.security_group_id
+  backend_security_group_id  = module.backend_task_definition.security_group_id
   private_subnets            = module.vpc.private_subnets
   alb_target_group_arn       = module.alb.target_groups["search"].arn
+  service_registry_arn       = aws_service_discovery_service.search.arn
   opensearch_domain_endpoint = aws_opensearch_domain.main.endpoint
   opensearch_domain_arn      = aws_opensearch_domain.main.arn
   event_bus_name             = module.eventbridge.eventbridge_bus_arn
@@ -106,12 +108,14 @@ module "recommendations" {
     Workflow    = "recommendations"
   }
 
-  ecs_cluster_arn       = module.ecs_cluster.arn
-  image_uri             = "${aws_ecr_repository.repos["recommendations"].repository_url}:latest"
-  alb_security_group_id = module.alb.security_group_id
-  private_subnets       = module.vpc.private_subnets
-  alb_target_group_arn  = module.alb.target_groups["recommendations"].arn
-  table_name            = aws_dynamodb_table.recommendations.name
+  ecs_cluster_arn           = module.ecs_cluster.arn
+  image_uri                 = "${aws_ecr_repository.repos["recommendations"].repository_url}:latest"
+  alb_security_group_id     = module.alb.security_group_id
+  backend_security_group_id = module.backend_task_definition.security_group_id
+  private_subnets           = module.vpc.private_subnets
+  alb_target_group_arn      = module.alb.target_groups["recommendations"].arn
+  service_registry_arn      = aws_service_discovery_service.recommendations.arn
+  table_name                = aws_dynamodb_table.recommendations.name
 }
 
 module "recently-played" {

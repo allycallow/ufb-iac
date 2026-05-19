@@ -48,3 +48,13 @@ variable "table_name" {
   type        = string
   default     = "ufb-recommendations"
 }
+
+variable "backend_security_group_id" {
+  description = "Security group ID for the backend ECS service"
+  type        = string
+}
+
+variable "service_registry_arn" {
+  description = "Cloud Map service ARN for ECS service discovery registration"
+  type        = string
+}

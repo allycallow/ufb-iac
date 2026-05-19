@@ -87,6 +87,56 @@ module "ecs_cluster" {
   }
 }
 
+resource "aws_service_discovery_private_dns_namespace" "ecs" {
+  name = "${local.name}.internal"
+  vpc  = module.vpc.vpc_id
+}
+
+resource "aws_service_discovery_service" "backend" {
+  name = "backend"
+
+  dns_config {
+    namespace_id   = aws_service_discovery_private_dns_namespace.ecs.id
+    routing_policy = "MULTIVALUE"
+
+    dns_records {
+      ttl  = 10
+      type = "A"
+    }
+  }
+
+}
+
+resource "aws_service_discovery_service" "search" {
+  name = "search"
+
+  dns_config {
+    namespace_id   = aws_service_discovery_private_dns_namespace.ecs.id
+    routing_policy = "MULTIVALUE"
+
+    dns_records {
+      ttl  = 10
+      type = "A"
+    }
+  }
+
+}
+
+resource "aws_service_discovery_service" "recommendations" {
+  name = "recommendations"
+
+  dns_config {
+    namespace_id   = aws_service_discovery_private_dns_namespace.ecs.id
+    routing_policy = "MULTIVALUE"
+
+    dns_records {
+      ttl  = 10
+      type = "A"
+    }
+  }
+
+}
+
 
 module "backend_task_definition" {
   source = "terraform-aws-modules/ecs/aws//modules/service"
@@ -161,19 +211,19 @@ module "backend_task_definition" {
         },
         {
           "name" : "RECOMMENDATIONS_ENDPOINT",
-          "value" : "https://recommendations.upfrontbeats.com"
-        },
-        {
-          "name" : "REDIS_HOST",
-          "value" : "${aws_elasticache_cluster.redis.cache_nodes[0].address}"
+          "value" : "http://${aws_service_discovery_service.recommendations.name}.${aws_service_discovery_private_dns_namespace.ecs.name}:8000"
         },
         {
           "name" : "SEARCH_ENDPOINT",
-          "value" : "https://search.upfrontbeats.com/api"
+          "value" : "http://${aws_service_discovery_service.search.name}.${aws_service_discovery_private_dns_namespace.ecs.name}:8000/api"
         },
         {
           "name" : "RUDDER_STACK_DATA_PLANE_URL",
           "value" : "https://upfrontbeajzbi.dataplane.rudderstack.com"
+        },
+        {
+          "name" : "REDIS_HOST",
+          "value" : "${aws_elasticache_cluster.redis.cache_nodes[0].address}"
         },
       ]
 
@@ -233,6 +283,11 @@ module "backend_task_definition" {
     }
   }
 
+  service_registries = {
+    registry_arn   = aws_service_discovery_service.backend.arn
+    container_name = "backend"
+  }
+
   security_group_ingress_rules = {
     alb_ingress_8000 = {
       type                         = "ingress"
@@ -250,6 +305,15 @@ module "backend_task_definition" {
       protocol                     = "tcp"
       description                  = "Allow traffic from monitoring service"
       referenced_security_group_id = module.monitoring.security_group_id
+    }
+
+    frontend_ingress_8000 = {
+      type                         = "ingress"
+      from_port                    = 8000
+      to_port                      = 8000
+      protocol                     = "tcp"
+      description                  = "Allow traffic from frontend service"
+      referenced_security_group_id = module.frontend_task_definition.security_group_id
     }
   }
 
@@ -323,8 +387,8 @@ module "frontend_task_definition" {
   cluster_arn          = module.ecs_cluster.arn
   force_new_deployment = false
 
-  cpu    = 512
-  memory = 1024
+  cpu    = 1024 # 1 vCPU
+  memory = 2048 # 2 GB RAM
 
   runtime_platform = {
     cpu_architecture        = "ARM64"
@@ -333,8 +397,8 @@ module "frontend_task_definition" {
 
   container_definitions = {
     frontend = {
-      cpu                    = 512
-      memory                 = 1024
+      cpu                    = 1024
+      memory                 = 2048
       essential              = true
       image                  = "${aws_ecr_repository.repos["frontend"].repository_url}:latest"
       user                   = "0"
@@ -355,8 +419,12 @@ module "frontend_task_definition" {
           "value" : "https://production.upfrontbeats.com"
         },
         {
-          "name" : "REACT_APP_ENDPOINT",
+          "name" : "NEXT_PUBLIC_REACT_APP_ENDPOINT",
           "value" : "https://new-admin.upfrontbeats.com/graphql"
+        },
+        {
+          "name" : "REACT_APP_ENDPOINT",
+          "value" : "http://${aws_service_discovery_service.backend.name}.${aws_service_discovery_private_dns_namespace.ecs.name}:8000/graphql"
         },
       ]
 
