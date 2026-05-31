@@ -30,6 +30,12 @@ module "monitoring_service" {
             scheme: https
             static_configs:
               - targets: ['new-admin.upfrontbeats.com']
+
+          - job_name: recommendations
+            metrics_path: /metrics
+            scheme: https
+            static_configs:
+              - targets: ['recommendations.upfrontbeats.com']
         EOF
 
         exec /bin/prometheus \
