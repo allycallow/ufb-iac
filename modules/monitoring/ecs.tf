@@ -10,7 +10,7 @@ module "monitoring_service" {
   container_definitions = {
     prometheus = {
       memory                 = 1024
-      image                  = "prom/prometheus:latest"
+      image                  = "prom/prometheus:v2.55.1"
       essential              = true
       readonlyRootFilesystem = false
       entrypoint             = ["/bin/sh", "-ec"]
@@ -43,12 +43,10 @@ module "monitoring_service" {
               - targets: ['search.upfrontbeats.com']
         EOF
 
-        # CRITICAL UPDATE: --storage.exemplars.max-exemplars is added here
-        # This tells Prometheus to catch and store the Trace IDs passing through your metrics
         exec /bin/prometheus \
           --config.file=/etc/prometheus/prometheus.yml \
           --storage.tsdb.path=/prometheus \
-          --storage.exemplars.max-exemplars=100000 \
+          --enable-feature=exemplar-storage \
           --web.console.libraries=/usr/share/prometheus/console_libraries \
           --web.console.templates=/usr/share/prometheus/consoles
       EOT
@@ -66,7 +64,7 @@ module "monitoring_service" {
 
     grafana = {
       memory                 = 1024
-      image                  = "grafana/grafana-oss:latest"
+      image                  = "grafana/grafana-oss:11.4.0"
       essential              = true
       readonlyRootFilesystem = false
       portMappings = [
@@ -83,13 +81,12 @@ module "monitoring_service" {
     # NEW: Grafana Tempo Container Added to the Sidecar Stack
     tempo = {
       memory                 = 1024
-      image                  = "grafana/tempo:latest"
+      image                  = "grafana/tempo:2.6.1"
       essential              = true
       readonlyRootFilesystem = false
       entrypoint             = ["/bin/sh", "-ec"]
       command = [<<-EOT
-        cat <<'EOF' >/etc/tempo/tempo.yaml
-        stream_over_http: true
+        cat <<'EOF' >/tmp/tempo.yaml
         server:
           http_listen_port: 3200
 
@@ -105,17 +102,19 @@ module "monitoring_service" {
         storage:
           trace:
             backend: s3
+            wal:
+              path: /tmp/tempo/wal
             s3:
-              bucket: my-company-tempo-traces # Update to your terraform-created S3 bucket name
-              region: us-east-1              # Update to your AWS region
+              bucket: ${var.name}-tempo-traces
+              region: eu-west-2
+              endpoint: s3.eu-west-2.amazonaws.com
 
         compactor:
           compaction:
-            block_size: 5MB
             compacted_block_retention: 48h
         EOF
 
-        exec /bin/tempo -config.file=/etc/tempo/tempo.yaml
+        exec /tempo -config.file=/tmp/tempo.yaml
       EOT
       ]
       portMappings = [

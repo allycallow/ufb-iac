@@ -344,7 +344,7 @@ module "backend_task_definition" {
       ]
     },
     {
-      actions = ["dynamodb:PutItem", "dynamodb:UpdateItem", "dynamodb:GetItem"]
+      actions = ["dynamodb:PutItem", "dynamodb:UpdateItem", "dynamodb:GetItem", "dynamodb:Query"]
       effect  = "Allow"
       resources = [
         "arn:aws:dynamodb:eu-west-2:${data.aws_caller_identity.current.account_id}:table/production-ufb-recently-played"
@@ -502,37 +502,25 @@ module "airflow_task_definition" {
           name  = "AIRFLOW__API__EXPOSE_CONFIG"
           value = "False"
         },
-        # {
-        #   name  = "AIRFLOW__AWS_AUTH_MANAGER__SAML_METADATA_URL"
-        #   value = "https://portal.sso.eu-west-2.amazonaws.com/saml/metadata/MDgxMDc3NzU3MjU4X2lucy03NTM1N2QxZTNmNjE3MjBl"
-        # },
-        # {
-        #   name  = "AIRFLOW__CORE__AUTH_MANAGER"
-        #   value = "airflow.providers.amazon.aws.auth_manager.aws_auth_manager.AwsAuthManager"
-        # },
-        # {
-        #   name  = "AIRFLOW__AWS_AUTH_MANAGER__REGION_NAME"
-        #   value = "eu-west-2"
-        # },
+        {
+          name  = "AIRFLOW__AWS_AUTH_MANAGER__SAML_METADATA_URL"
+          value = "https://portal.sso.eu-west-2.amazonaws.com/saml/metadata/MDgxMDc3NzU3MjU4X2lucy03NTM1N2QxZTNmNjE3MjBl"
+        },
+        {
+          name  = "AIRFLOW__CORE__AUTH_MANAGER"
+          value = "airflow.providers.amazon.aws.auth_manager.aws_auth_manager.AwsAuthManager"
+        },
+        {
+          name  = "AIRFLOW__AWS_AUTH_MANAGER__REGION_NAME"
+          value = "eu-west-2"
+        },
         {
           name  = "AIRFLOW__CORE__ALLOWED_DESERIALIZATION_CLASSES"
           value = "google.genai.types.*"
         },
         {
-          name  = "_AIRFLOW_WWW_USER_CREATE"
-          value = "true"
-        },
-        {
-          name  = "AIRFLOW__CORE__AUTH_MANAGER"
-          value = "airflow.providers.fab.auth_manager.fab_auth_manager.FabAuthManager"
-        },
-        {
           name  = "BACKEND_API_ENDPOINT"
           value = "https://new-admin.upfrontbeats.com/api"
-        },
-        {
-          name  = "_AIRFLOW_WWW_USER_USERNAME"
-          value = "admin"
         }
       ]
 
@@ -556,10 +544,6 @@ module "airflow_task_definition" {
         {
           name      = "BACKEND_API_KEY"
           valueFrom = "arn:aws:secretsmanager:eu-west-2:${data.aws_caller_identity.current.account_id}:secret:prod/ufb/airflow-JDJfSg:BACKEND_API_KEY::"
-        },
-        {
-          name      = "_AIRFLOW_WWW_USER_PASSWORD"
-          valueFrom = "arn:aws:secretsmanager:eu-west-2:${data.aws_caller_identity.current.account_id}:secret:prod/ufb/airflow-JDJfSg:_AIRFLOW_WWW_USER_PASSWORD::"
         },
       ]
 
@@ -731,6 +715,19 @@ module "airflow_task_definition" {
         module.audio_processing.queue_arn,
         module.audio_processing.dlq_arn
       ]
+    },
+
+    # IAM Identity Center permissions for AwsAuthManager
+    {
+      effect = "Allow"
+      actions = [
+        "sso:DescribeRegisteredRegions",
+        "sso:ListApplicationAssignments",
+        "identitystore:DescribeUser",
+        "identitystore:DescribeGroup",
+        "identitystore:ListGroupMembershipsForMember"
+      ]
+      resources = ["*"]
     }
   ]
 
