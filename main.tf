@@ -141,8 +141,10 @@ module "monitoring" {
   }
 
 
-  ecs_cluster_arn       = module.ecs_cluster.arn
-  alb_security_group_id = module.alb.security_group_id
-  private_subnets       = module.vpc.private_subnets
-  alb_target_group_arn  = module.alb.target_groups["monitoring"].arn
+  ecs_cluster_arn           = module.ecs_cluster.arn
+  alb_security_group_id     = module.alb.security_group_id
+  private_subnets           = module.vpc.private_subnets
+  alb_target_group_arn      = module.alb.target_groups["monitoring"].arn
+  vpc_cidr_block            = module.vpc.vpc_cidr_block
+  service_connect_namespace = aws_service_discovery_private_dns_namespace.ecs.name
 }

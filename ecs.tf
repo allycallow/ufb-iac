@@ -93,6 +93,12 @@ resource "aws_service_discovery_private_dns_namespace" "ecs" {
 }
 
 
+# TODO:
+# Need to bump
+# cpu = 2048
+# memory = 4096
+# Eating CPU
+
 module "backend_task_definition" {
   source = "terraform-aws-modules/ecs/aws//modules/service"
 
@@ -180,6 +186,10 @@ module "backend_task_definition" {
           "name" : "REDIS_HOST",
           "value" : "${aws_elasticache_cluster.redis.cache_nodes[0].address}"
         },
+        {
+          "name" : "OTEL_EXPORTER_OTLP_ENDPOINT",
+          "value" : "http://tempo:4317"
+        }
       ]
 
       secrets = [

@@ -29,3 +29,13 @@ variable "private_subnets" {
   type        = list(string)
 
 }
+
+variable "vpc_cidr_block" {
+  description = "CIDR block of the VPC, used to allow internal traffic"
+  type        = string
+}
+
+variable "service_connect_namespace" {
+  description = "AWS Service Connect namespace for inter-service discovery"
+  type        = string
+}

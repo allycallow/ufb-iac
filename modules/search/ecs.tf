@@ -42,6 +42,10 @@ module "search_task_definition" {
         {
           name  = "STAGE"
           value = "${terraform.workspace}"
+        },
+        {
+          name  = "OTEL_EXPORTER_OTLP_ENDPOINT",
+          value = "http://tempo:4317"
         }
       ]
 

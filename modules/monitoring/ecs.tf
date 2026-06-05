@@ -4,12 +4,11 @@ module "monitoring_service" {
   name        = var.name
   cluster_arn = var.ecs_cluster_arn
 
-  cpu    = 1024 # 1 vCPU shared across both containers
-  memory = 2048 # 2 GB RAM shared across both containers
+  cpu    = 512
+  memory = 3072
 
   container_definitions = {
     prometheus = {
-      cpu                    = 512
       memory                 = 1024
       image                  = "prom/prometheus:latest"
       essential              = true
@@ -36,11 +35,20 @@ module "monitoring_service" {
             scheme: https
             static_configs:
               - targets: ['recommendations.upfrontbeats.com']
+
+          - job_name: search
+            metrics_path: /metrics
+            scheme: https
+            static_configs:
+              - targets: ['search.upfrontbeats.com']
         EOF
 
+        # CRITICAL UPDATE: --storage.exemplars.max-exemplars is added here
+        # This tells Prometheus to catch and store the Trace IDs passing through your metrics
         exec /bin/prometheus \
           --config.file=/etc/prometheus/prometheus.yml \
           --storage.tsdb.path=/prometheus \
+          --storage.exemplars.max-exemplars=100000 \
           --web.console.libraries=/usr/share/prometheus/console_libraries \
           --web.console.templates=/usr/share/prometheus/consoles
       EOT
@@ -57,7 +65,6 @@ module "monitoring_service" {
     }
 
     grafana = {
-      cpu                    = 512
       memory                 = 1024
       image                  = "grafana/grafana-oss:latest"
       essential              = true
@@ -72,11 +79,79 @@ module "monitoring_service" {
       ]
       enable_cloudwatch_logging = true
     }
+
+    # NEW: Grafana Tempo Container Added to the Sidecar Stack
+    tempo = {
+      memory                 = 1024
+      image                  = "grafana/tempo:latest"
+      essential              = true
+      readonlyRootFilesystem = false
+      entrypoint             = ["/bin/sh", "-ec"]
+      command = [<<-EOT
+        cat <<'EOF' >/etc/tempo/tempo.yaml
+        stream_over_http: true
+        server:
+          http_listen_port: 3200
+
+        distributor:
+          receivers:
+            otlp:
+              protocols:
+                grpc:
+                  endpoint: 0.0.0.0:4317
+                http:
+                  endpoint: 0.0.0.0:4318
+
+        storage:
+          trace:
+            backend: s3
+            s3:
+              bucket: my-company-tempo-traces # Update to your terraform-created S3 bucket name
+              region: us-east-1              # Update to your AWS region
+
+        compactor:
+          compaction:
+            block_size: 5MB
+            compacted_block_retention: 48h
+        EOF
+
+        exec /bin/tempo -config.file=/etc/tempo/tempo.yaml
+      EOT
+      ]
+      portMappings = [
+        {
+          name          = "tempo-otlp-grpc"
+          containerPort = 4317
+          hostPort      = 4317
+          protocol      = "tcp"
+        },
+        {
+          name          = "tempo-http"
+          containerPort = 3200
+          hostPort      = 3200
+          protocol      = "tcp"
+        }
+      ]
+      enable_cloudwatch_logging = true
+    }
   }
 
   subnet_ids               = var.private_subnets
   autoscaling_max_capacity = 1
   desired_count            = 1
+
+  service_connect_configuration = {
+    enabled   = true
+    namespace = var.service_connect_namespace
+    service = [{
+      port_name      = "tempo-otlp-grpc"
+      discovery_name = "tempo-sc"
+      client_alias = {
+        dns_name = "tempo"
+        port     = 4317
+      }
+    }]
+  }
 
   load_balancer = {
     service = {
@@ -92,8 +167,18 @@ module "monitoring_service" {
       from_port                    = 3000
       to_port                      = 3000
       protocol                     = "tcp"
-      description                  = "Allow traffic from ALB"
+      description                  = "Allow traffic from ALB to Grafana"
       referenced_security_group_id = var.alb_security_group_id
+    }
+
+    # NEW INGRESS RULE: Allows your Django and FastAPI applications to push traces to Tempo
+    app_ingress_4317 = {
+      type        = "ingress"
+      from_port   = 4317
+      to_port     = 4317
+      protocol    = "tcp"
+      description = "Allow OTLP tracing traffic from applications to Tempo"
+      cidr_ipv4   = var.vpc_cidr_block
     }
   }
 
@@ -103,9 +188,14 @@ module "monitoring_service" {
       from_port   = 0
       to_port     = 65535
       protocol    = "-1"
-      description = "Allow traffic from anywhere"
+      description = "Allow traffic to anywhere (Crucial for Tempo to reach S3)"
       cidr_ipv4   = "0.0.0.0/0"
     }
+  }
+
+  # NEW: Attaches your S3 IAM policy directly to the combined monitoring task role
+  tasks_iam_role_policies = {
+    TempoS3Access = aws_iam_policy.tempo_s3_access.arn
   }
 
   tags = var.tags
