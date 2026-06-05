@@ -1059,7 +1059,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "builder",
-          "expr": "topk(5, sum(increase(ufb_search_terms_total[5m])) by (term))",
+          "expr": "topk(10, sum(increase(ufb_search_terms_total[5m])) by (term))",
           "legendFormat": "{{term}}",
           "range": true,
           "refId": "A"

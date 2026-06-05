@@ -189,6 +189,10 @@ module "backend_task_definition" {
         {
           "name" : "OTEL_EXPORTER_OTLP_ENDPOINT",
           "value" : "http://tempo:4317"
+        },
+        {
+          "name" : "OTEL_EXPORTER_OTLP_TIMEOUT",
+          "value" : "30000"
         }
       ]
 

@@ -1,10 +1,11 @@
 module "monitoring_service" {
   source = "terraform-aws-modules/ecs/aws//modules/service"
 
-  name        = var.name
-  cluster_arn = var.ecs_cluster_arn
+  name                 = var.name
+  cluster_arn          = var.ecs_cluster_arn
+  force_new_deployment = true
 
-  cpu    = 512
+  cpu    = 1024
   memory = 3072
 
   container_definitions = {
@@ -123,6 +124,7 @@ module "monitoring_service" {
           containerPort = 4317
           hostPort      = 4317
           protocol      = "tcp"
+          appProtocol   = "grpc"
         },
         {
           name          = "tempo-http"
