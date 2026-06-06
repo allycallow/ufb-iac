@@ -503,6 +503,10 @@ module "airflow_task_definition" {
           value = "https://airflow.upfrontbeats.com"
         },
         {
+          name  = "AIRFLOW__WEBSERVER__BASE_URL"
+          value = "https://airflow.upfrontbeats.com"
+        },
+        {
           name  = "AIRFLOW__API__EXPOSE_CONFIG"
           value = "False"
         },
