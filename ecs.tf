@@ -507,6 +507,10 @@ module "airflow_task_definition" {
           value = "https://airflow.upfrontbeats.com"
         },
         {
+          name  = "AIRFLOW__CORE__EXECUTION_API_SERVER_URL"
+          value = "http://localhost:8080/execution/"
+        },
+        {
           name  = "AIRFLOW__API__EXPOSE_CONFIG"
           value = "False"
         },
