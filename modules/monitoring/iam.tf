@@ -1,3 +1,26 @@
+resource "aws_iam_policy" "efs_access" {
+  name        = "${var.name}-EfsAccessPolicy"
+  description = "Allows monitoring ECS tasks to mount EFS volumes"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "elasticfilesystem:ClientMount",
+          "elasticfilesystem:ClientWrite",
+          "elasticfilesystem:ClientRootAccess"
+        ]
+        Resource = [
+          aws_efs_file_system.grafana.arn,
+          aws_efs_file_system.prometheus.arn,
+        ]
+      }
+    ]
+  })
+}
+
 resource "aws_iam_policy" "tempo_s3_access" {
   name        = "TempoS3AccessPolicy"
   description = "Allows Grafana Tempo on ECS to manage its storage bucket"

@@ -65,6 +65,13 @@ module "monitoring_service" {
           protocol      = "tcp"
         }
       ]
+      mountPoints = [
+        {
+          sourceVolume  = "prometheus-data"
+          containerPath = "/prometheus"
+          readOnly      = false
+        }
+      ]
       enable_cloudwatch_logging = true
     }
 
@@ -79,6 +86,13 @@ module "monitoring_service" {
           containerPort = 3000
           hostPort      = 3000
           protocol      = "tcp"
+        }
+      ]
+      mountPoints = [
+        {
+          sourceVolume  = "grafana-data"
+          containerPath = "/var/lib/grafana"
+          readOnly      = false
         }
       ]
       enable_cloudwatch_logging = true
@@ -199,9 +213,32 @@ module "monitoring_service" {
     }
   }
 
-  # NEW: Attaches your S3 IAM policy directly to the combined monitoring task role
+  volume = {
+    "grafana-data" = {
+      efs_volume_configuration = {
+        file_system_id     = aws_efs_file_system.grafana.id
+        transit_encryption = "ENABLED"
+        authorization_config = {
+          access_point_id = aws_efs_access_point.grafana.id
+          iam             = "ENABLED"
+        }
+      }
+    }
+    "prometheus-data" = {
+      efs_volume_configuration = {
+        file_system_id     = aws_efs_file_system.prometheus.id
+        transit_encryption = "ENABLED"
+        authorization_config = {
+          access_point_id = aws_efs_access_point.prometheus.id
+          iam             = "ENABLED"
+        }
+      }
+    }
+  }
+
   tasks_iam_role_policies = {
     TempoS3Access = aws_iam_policy.tempo_s3_access.arn
+    EfsAccess     = aws_iam_policy.efs_access.arn
   }
 
   tags = var.tags

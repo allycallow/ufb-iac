@@ -39,3 +39,8 @@ variable "service_connect_namespace" {
   description = "AWS Service Connect namespace for inter-service discovery"
   type        = string
 }
+
+variable "vpc_id" {
+  description = "VPC ID used for the EFS security group"
+  type        = string
+}

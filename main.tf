@@ -146,5 +146,6 @@ module "monitoring" {
   private_subnets           = module.vpc.private_subnets
   alb_target_group_arn      = module.alb.target_groups["monitoring"].arn
   vpc_cidr_block            = module.vpc.vpc_cidr_block
+  vpc_id                    = module.vpc.vpc_id
   service_connect_namespace = aws_service_discovery_private_dns_namespace.ecs.name
 }

@@ -761,7 +761,8 @@ module "airflow_task_definition" {
       effect = "Allow"
       actions = [
         "dynamodb:PutItem",
-        "dynamodb:UpdateItem"
+        "dynamodb:UpdateItem",
+        "dynamodb:BatchWriteItem"
       ]
       resources = [
         "arn:aws:dynamodb:eu-west-2:${data.aws_caller_identity.current.account_id}:table/production-ufb-recommendations"
