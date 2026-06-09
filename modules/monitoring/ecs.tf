@@ -42,6 +42,11 @@ module "monitoring_service" {
             scheme: https
             static_configs:
               - targets: ['search.upfrontbeats.com']
+
+          - job_name: airflow
+            metrics_path: /metrics
+            static_configs:
+              - targets: ['airflow-statsd:9102']
         EOF
 
         exec /bin/prometheus \

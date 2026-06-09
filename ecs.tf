@@ -533,6 +533,22 @@ module "airflow_task_definition" {
         {
           name  = "BACKEND_API_ENDPOINT"
           value = "https://new-admin.upfrontbeats.com/api"
+        },
+        {
+          name  = "AIRFLOW__METRICS__STATSD_ON"
+          value = "True"
+        },
+        {
+          name  = "AIRFLOW__METRICS__STATSD_HOST"
+          value = "localhost"
+        },
+        {
+          name  = "AIRFLOW__METRICS__STATSD_PORT"
+          value = "9125"
+        },
+        {
+          name  = "AIRFLOW__METRICS__STATSD_PREFIX"
+          value = "airflow"
         }
       ]
 
@@ -568,6 +584,22 @@ module "airflow_task_definition" {
         }
       }
     }
+
+    statsd-exporter = {
+      memory                 = 256
+      image                  = "prom/statsd-exporter:v0.27.1"
+      essential              = false
+      readonlyRootFilesystem = false
+      portMappings = [
+        {
+          name          = "statsd-exporter"
+          containerPort = 9102
+          hostPort      = 9102
+          protocol      = "tcp"
+        }
+      ]
+      enable_cloudwatch_logging = true
+    }
   }
 
   subnet_ids                        = module.vpc.private_subnets
@@ -583,6 +615,19 @@ module "airflow_task_definition" {
     }
   }
 
+  service_connect_configuration = {
+    enabled   = true
+    namespace = aws_service_discovery_private_dns_namespace.ecs.name
+    service = [{
+      port_name      = "statsd-exporter"
+      discovery_name = "airflow-statsd-sc"
+      client_alias = {
+        dns_name = "airflow-statsd"
+        port     = 9102
+      }
+    }]
+  }
+
   security_group_ingress_rules = {
     alb_ingress_8080 = {
       type                         = "ingress"
@@ -591,6 +636,15 @@ module "airflow_task_definition" {
       protocol                     = "tcp"
       description                  = "Allow traffic from ALB"
       referenced_security_group_id = module.alb.security_group_id
+    }
+
+    monitoring_ingress_9102 = {
+      type                         = "ingress"
+      from_port                    = 9102
+      to_port                      = 9102
+      protocol                     = "tcp"
+      description                  = "Allow Prometheus to scrape StatsD exporter"
+      referenced_security_group_id = module.monitoring.security_group_id
     }
   }
 
