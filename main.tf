@@ -67,16 +67,16 @@ module "search" {
     Workflow    = "search"
   }
 
-  ecs_cluster_arn            = module.ecs_cluster.arn
-  image_uri                  = "${aws_ecr_repository.repos["search"].repository_url}:latest"
-  alb_security_group_id      = module.alb.security_group_id
-  backend_security_group_id  = module.backend_task_definition.security_group_id
-  service_connect_namespace  = aws_service_discovery_private_dns_namespace.ecs.name
-  private_subnets            = module.vpc.private_subnets
-  alb_target_group_arn       = module.alb.target_groups["search"].arn
-  opensearch_domain_endpoint = aws_opensearch_domain.main.endpoint
-  opensearch_domain_arn      = aws_opensearch_domain.main.arn
-  event_bus_name             = module.eventbridge.eventbridge_bus_arn
+  ecs_cluster_arn           = module.ecs_cluster.arn
+  image_uri                 = "${aws_ecr_repository.repos["search"].repository_url}:latest"
+  alb_security_group_id     = module.alb.security_group_id
+  backend_security_group_id = module.backend.security_group_id
+  service_connect_namespace = aws_service_discovery_private_dns_namespace.ecs.name
+  private_subnets           = module.vpc.private_subnets
+  alb_target_group_arn      = module.alb.target_groups["search"].arn
+  vpc_id                    = module.vpc.vpc_id
+  vpc_cidr_block            = module.vpc.vpc_cidr_block
+  event_bus_name            = module.eventbridge.eventbridge_bus_arn
 }
 
 module "track_metadata_processing" {
@@ -111,7 +111,7 @@ module "recommendations" {
   ecs_cluster_arn           = module.ecs_cluster.arn
   image_uri                 = "${aws_ecr_repository.repos["recommendations"].repository_url}:latest"
   alb_security_group_id     = module.alb.security_group_id
-  backend_security_group_id = module.backend_task_definition.security_group_id
+  backend_security_group_id = module.backend.security_group_id
   service_connect_namespace = aws_service_discovery_private_dns_namespace.ecs.name
   private_subnets           = module.vpc.private_subnets
   alb_target_group_arn      = module.alb.target_groups["recommendations"].arn

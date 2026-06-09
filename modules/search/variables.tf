@@ -36,14 +36,13 @@ variable "alb_target_group_arn" {
 
 }
 
-variable "opensearch_domain_endpoint" {
-  description = "Endpoint of the OpenSearch domain to connect to"
+variable "vpc_id" {
+  description = "ID of the VPC to deploy OpenSearch into"
   type        = string
-
 }
 
-variable "opensearch_domain_arn" {
-  description = "ARN of the OpenSearch domain"
+variable "vpc_cidr_block" {
+  description = "CIDR block of the VPC, used for OpenSearch security group ingress"
   type        = string
 }
 

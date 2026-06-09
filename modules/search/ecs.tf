@@ -33,7 +33,7 @@ module "search_task_definition" {
       environment = [
         {
           name  = "OPENSEARCH_DOMAIN_ENDPOINT"
-          value = var.opensearch_domain_endpoint
+          value = aws_opensearch_domain.main.endpoint
         },
         {
           name  = "BACKEND_API_ENDPOINT"
@@ -149,7 +149,7 @@ module "search_task_definition" {
         "es:ESHttpDelete"
       ]
       resources = [
-        "${var.opensearch_domain_arn}/*"
+        "${aws_opensearch_domain.main.arn}/*"
       ]
     }
   ]
