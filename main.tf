@@ -149,3 +149,80 @@ module "monitoring" {
   vpc_id                    = module.vpc.vpc_id
   service_connect_namespace = aws_service_discovery_private_dns_namespace.ecs.name
 }
+
+module "frontend" {
+  source = "./modules/frontend"
+
+  name = "${local.name}-frontend"
+
+  tags = {
+    Environment = terraform.workspace
+    Name        = local.name
+    Workflow    = "frontend"
+  }
+
+  ecs_cluster_arn           = module.ecs_cluster.arn
+  image_uri                 = "${aws_ecr_repository.repos["frontend"].repository_url}:latest"
+  alb_security_group_id     = module.alb.security_group_id
+  private_subnets           = module.vpc.private_subnets
+  alb_target_group_arn      = module.alb.target_groups["frontend"].arn
+  service_connect_namespace = aws_service_discovery_private_dns_namespace.ecs.name
+  task_exec_policy_arn      = aws_iam_policy.ecs_task_exec_policy.arn
+}
+
+module "backend" {
+  source = "./modules/backend"
+
+  name = "${local.name}-backend"
+
+  tags = {
+    Environment = terraform.workspace
+    Name        = local.name
+    Workflow    = "backend"
+  }
+
+  ecs_cluster_arn              = module.ecs_cluster.arn
+  image_uri                    = "${aws_ecr_repository.repos["backend"].repository_url}:latest"
+  alb_security_group_id        = module.alb.security_group_id
+  monitoring_security_group_id = module.monitoring.security_group_id
+  frontend_security_group_id   = module.frontend.security_group_id
+  private_subnets              = module.vpc.private_subnets
+  alb_target_group_arn         = module.alb.target_groups["backend"].arn
+  service_connect_namespace    = aws_service_discovery_private_dns_namespace.ecs.name
+  db_endpoint                  = split(":", module.db.db_instance_endpoint)[0]
+  media_bucket_name            = aws_s3_bucket.media.bucket
+  media_bucket_arn             = aws_s3_bucket.media.arn
+  cognito_user_pool_id         = aws_cognito_user_pool.pool.id
+  cognito_app_client_id        = aws_cognito_user_pool_client.client.id
+  cognito_user_pool_arn        = aws_cognito_user_pool.pool.arn
+  cf_media_key_id              = aws_cloudfront_public_key.cf_media_key.id
+  event_bus_name               = module.eventbridge.eventbridge_bus_name
+  event_bus_arn                = module.eventbridge.eventbridge_bus_arn
+  redis_host                   = aws_elasticache_cluster.redis.cache_nodes[0].address
+  media_private_key_arn        = aws_ssm_parameter.media_private_key.arn
+  secret_prefix                = local.secret_prefix
+  task_exec_policy_arn         = aws_iam_policy.ecs_task_exec_policy.arn
+}
+
+module "airflow" {
+  source = "./modules/airflow"
+
+  name = "${local.name}-airflow"
+
+  tags = {
+    Environment = terraform.workspace
+    Name        = local.name
+    Workflow    = "airflow"
+  }
+
+  ecs_cluster_arn              = module.ecs_cluster.arn
+  image_uri                    = "${aws_ecr_repository.repos["airflow"].repository_url}:latest"
+  alb_security_group_id        = module.alb.security_group_id
+  monitoring_security_group_id = module.monitoring.security_group_id
+  private_subnets              = module.vpc.private_subnets
+  alb_target_group_arn         = module.alb.target_groups["airflow"].arn
+  service_connect_namespace    = aws_service_discovery_private_dns_namespace.ecs.name
+  audio_processing_queue_arn   = module.audio_processing.queue_arn
+  audio_processing_dlq_arn     = module.audio_processing.dlq_arn
+  task_exec_policy_arn         = aws_iam_policy.ecs_task_exec_policy.arn
+}
