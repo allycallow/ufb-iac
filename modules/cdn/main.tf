@@ -6,6 +6,27 @@ data "aws_cloudfront_cache_policy" "this" {
   name = "Managed-CachingOptimized"
 }
 
+resource "random_id" "media_id" {
+  byte_length = 8
+}
+
+resource "aws_cloudfront_origin_access_identity" "media" {
+  comment = ""
+}
+
+resource "aws_cloudfront_origin_access_identity" "frontend" {
+  comment = ""
+}
+
+resource "aws_cloudfront_public_key" "cf_media_key" {
+  encoded_key = var.media_public_key_pem
+}
+
+resource "aws_cloudfront_key_group" "cf_media_keygroup" {
+  items = [aws_cloudfront_public_key.cf_media_key.id]
+  name  = "${random_id.media_id.hex}-group"
+}
+
 resource "aws_cloudfront_cache_policy" "audio_segments" {
   name    = "${terraform.workspace}-audio-segments-no-cache"
   comment = "Zero-TTL for encrypted CMAF segments. Prevents 304s that break DRM session decryption."
@@ -49,10 +70,10 @@ resource "aws_cloudfront_response_headers_policy" "custom" {
 
     access_control_allow_origins {
       items = [
-        "https://*.${local.domain}",
-        "https://${local.domain}",
-        "https://local.${local.domain}:3000",
-        "https://local.${local.domain}:3001",
+        "https://*.${var.domain}",
+        "https://${var.domain}",
+        "https://local.${var.domain}:3000",
+        "https://local.${var.domain}:3001",
       ]
     }
 
@@ -62,31 +83,10 @@ resource "aws_cloudfront_response_headers_policy" "custom" {
   }
 }
 
-resource "random_id" "media_id" {
-  byte_length = 8
-}
-
-resource "aws_cloudfront_origin_access_identity" "origin_access_identity_media" {
-  comment = ""
-}
-
-resource "aws_cloudfront_origin_access_identity" "origin_access_identity_frontend" {
-  comment = ""
-}
-
-resource "aws_cloudfront_public_key" "cf_media_key" {
-  encoded_key = tls_private_key.media.public_key_pem
-}
-
-resource "aws_cloudfront_key_group" "cf_media_keygroup" {
-  items = [aws_cloudfront_public_key.cf_media_key.id]
-  name  = "${random_id.media_id.hex}-group"
-}
-
 resource "aws_cloudfront_distribution" "media" {
   enabled      = true
   http_version = "http2and3"
-  aliases      = terraform.workspace == "dev" ? ["dev-cdn.${local.domain}"] : ["cdn.${local.domain}"]
+  aliases      = terraform.workspace == "dev" ? ["dev-cdn.${var.domain}"] : ["cdn.${var.domain}"]
 
   price_class = "PriceClass_100"
 
@@ -103,19 +103,19 @@ resource "aws_cloudfront_distribution" "media" {
   }
 
   origin {
-    domain_name = aws_s3_bucket.media.bucket_domain_name
-    origin_id   = aws_s3_bucket.media.id
+    domain_name = var.media_bucket_domain_name
+    origin_id   = var.media_bucket_id
     origin_path = "/production-ufb-media"
 
     s3_origin_config {
-      origin_access_identity = aws_cloudfront_origin_access_identity.origin_access_identity_media.cloudfront_access_identity_path
+      origin_access_identity = aws_cloudfront_origin_access_identity.media.cloudfront_access_identity_path
     }
   }
 
   default_cache_behavior {
     allowed_methods          = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
     cached_methods           = ["GET", "HEAD"]
-    target_origin_id         = aws_s3_bucket.media.id
+    target_origin_id         = var.media_bucket_id
     viewer_protocol_policy   = "redirect-to-https"
     min_ttl                  = 0
     default_ttl              = terraform.workspace == "dev" ? 0 : 604800
@@ -130,7 +130,7 @@ resource "aws_cloudfront_distribution" "media" {
     path_pattern               = "/audio/*"
     allowed_methods            = ["GET", "HEAD", "OPTIONS"]
     cached_methods             = ["GET", "HEAD", "OPTIONS"]
-    target_origin_id           = aws_s3_bucket.media.id
+    target_origin_id           = var.media_bucket_id
     compress                   = true
     viewer_protocol_policy     = "redirect-to-https"
     trusted_key_groups         = [aws_cloudfront_key_group.cf_media_keygroup.id]
@@ -143,7 +143,7 @@ resource "aws_cloudfront_distribution" "media" {
     path_pattern             = "/images/*"
     allowed_methods          = ["GET", "HEAD", "OPTIONS"]
     cached_methods           = ["GET", "HEAD", "OPTIONS"]
-    target_origin_id         = aws_s3_bucket.media.id
+    target_origin_id         = var.media_bucket_id
     min_ttl                  = 0
     default_ttl              = 3600
     max_ttl                  = 86400
@@ -175,7 +175,7 @@ resource "aws_cloudfront_distribution" "media" {
     path_pattern             = "/static/*"
     allowed_methods          = ["GET", "HEAD", "OPTIONS"]
     cached_methods           = ["GET", "HEAD", "OPTIONS"]
-    target_origin_id         = aws_s3_bucket.media.id
+    target_origin_id         = var.media_bucket_id
     min_ttl                  = 0
     default_ttl              = 3600
     max_ttl                  = 86400
@@ -189,7 +189,7 @@ resource "aws_cloudfront_distribution" "media" {
 resource "aws_cloudfront_distribution" "frontend" {
   enabled      = true
   http_version = "http2and3"
-  aliases      = ["production.${local.domain}"]
+  aliases      = ["production.${var.domain}"]
 
   viewer_certificate {
     acm_certificate_arn      = "arn:aws:acm:us-east-1:081077757258:certificate/e5eb1087-ba5d-4b03-8dd9-40a321e39f48"
@@ -198,7 +198,7 @@ resource "aws_cloudfront_distribution" "frontend" {
   }
 
   origin {
-    domain_name = module.alb.dns_name
+    domain_name = var.alb_dns_name
     origin_id   = "frontend-alb-origin"
 
     custom_origin_config {
@@ -291,18 +291,44 @@ resource "aws_cloudfront_distribution" "frontend" {
   }
 }
 
-output "cloudfront_dist_media_id" {
-  value = aws_cloudfront_distribution.media.id
+# S3 bucket policies granting CloudFront OAI access
+
+data "aws_iam_policy_document" "media" {
+  statement {
+    actions = ["s3:GetObject"]
+    resources = [
+      var.media_bucket_arn,
+      "${var.media_bucket_arn}/*"
+    ]
+
+    principals {
+      type        = "AWS"
+      identifiers = [aws_cloudfront_origin_access_identity.media.iam_arn]
+    }
+  }
 }
 
-output "media_cf_url" {
-  value = "https://${aws_cloudfront_distribution.media.domain_name}"
+resource "aws_s3_bucket_policy" "media" {
+  bucket = var.media_bucket_id
+  policy = data.aws_iam_policy_document.media.json
 }
 
-output "cf_media_keygroup_id" {
-  value = aws_cloudfront_key_group.cf_media_keygroup.id
+data "aws_iam_policy_document" "frontend" {
+  statement {
+    actions = ["s3:GetObject"]
+    resources = [
+      var.frontend_bucket_arn,
+      "${var.frontend_bucket_arn}/*"
+    ]
+
+    principals {
+      type        = "AWS"
+      identifiers = [aws_cloudfront_origin_access_identity.frontend.iam_arn]
+    }
+  }
 }
 
-output "cf_media_key_id" {
-  value = aws_cloudfront_public_key.cf_media_key.id
+resource "aws_s3_bucket_policy" "frontend" {
+  bucket = var.frontend_bucket_id
+  policy = data.aws_iam_policy_document.frontend.json
 }

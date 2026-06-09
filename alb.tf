@@ -4,8 +4,8 @@ module "alb" {
 
   name               = local.name
   load_balancer_type = "application"
-  vpc_id             = module.vpc.vpc_id
-  subnets            = module.vpc.public_subnets
+  vpc_id             = module.networking.vpc_id
+  subnets            = module.networking.public_subnets
 
   enable_deletion_protection = true
 
@@ -30,7 +30,7 @@ module "alb" {
   security_group_egress_rules = {
     all = {
       ip_protocol = "-1"
-      cidr_ipv4   = module.vpc.vpc_cidr_block
+      cidr_ipv4   = module.networking.vpc_cidr_block
     }
   }
 

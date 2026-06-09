@@ -13,7 +13,7 @@ resource "aws_iam_policy" "ecs_task_exec_policy" {
           "secretsmanager:DescribeSecret"
         ]
         Resource = [
-          "${local.secret_prefix}*"
+          "${var.secret_prefix}*"
         ]
       },
       {
@@ -33,7 +33,7 @@ resource "aws_iam_policy" "ecs_task_exec_policy" {
           "ssm:GetParameterHistory"
         ]
         Resource = [
-          aws_ssm_parameter.media_private_key.arn
+          var.ssm_media_private_key_arn
         ]
       }
     ]
@@ -65,10 +65,10 @@ resource "aws_iam_role_policy_attachment" "attach_task_exec_policy" {
 module "ecs_cluster" {
   source = "terraform-aws-modules/ecs/aws//modules/cluster"
 
-  name = local.name
+  name = var.name
 
   task_exec_secret_arns = [
-    "arn:aws:secretsmanager:${local.region}:${data.aws_caller_identity.current.account_id}:secret:*"
+    "arn:aws:secretsmanager:${var.region}:${var.account_id}:secret:*"
   ]
 
   cluster_capacity_providers = ["FARGATE", "FARGATE_SPOT"]
@@ -88,17 +88,6 @@ module "ecs_cluster" {
 }
 
 resource "aws_service_discovery_private_dns_namespace" "ecs" {
-  name = "${local.name}.internal"
-  vpc  = module.vpc.vpc_id
-}
-
-
-# TODO:
-# Need to bump
-# cpu = 2048
-# memory = 4096
-# Eating CPU
-
-output "cluster_name" {
-  value = local.name
+  name = "${var.name}.internal"
+  vpc  = var.vpc_id
 }

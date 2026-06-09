@@ -1,11 +1,11 @@
 resource "aws_cognito_user_pool" "pool" {
-  name                     = local.name
+  name                     = var.name
   username_attributes      = ["email"]
   auto_verified_attributes = ["email"]
 
   lambda_config {
-    post_confirmation = "arn:aws:lambda:eu-west-2:${data.aws_caller_identity.current.account_id}:function:production-ufb-post-confirmation"
-    pre_sign_up       = "arn:aws:lambda:eu-west-2:${data.aws_caller_identity.current.account_id}:function:production-ufb-pre-signup"
+    post_confirmation = "arn:aws:lambda:eu-west-2:${var.account_id}:function:production-ufb-post-confirmation"
+    pre_sign_up       = "arn:aws:lambda:eu-west-2:${var.account_id}:function:production-ufb-pre-signup"
   }
 
   account_recovery_setting {
@@ -69,19 +69,19 @@ resource "aws_cognito_user_pool" "pool" {
 }
 
 resource "aws_cognito_user_pool_client" "client" {
-  name                = local.name
+  name                = var.name
   user_pool_id        = aws_cognito_user_pool.pool.id
   explicit_auth_flows = ["ALLOW_REFRESH_TOKEN_AUTH", "ALLOW_USER_SRP_AUTH", "ALLOW_USER_PASSWORD_AUTH"]
 
   callback_urls = [
-    "https://local.upfrontbeats.com:3001/",
-    "https://${terraform.workspace}.upfrontbeats.com/",
-    "https://upfrontbeats.com/"
+    "https://local.${var.domain}:3001/",
+    "https://${terraform.workspace}.${var.domain}/",
+    "https://${var.domain}/"
   ]
   logout_urls = [
-    "https://local.upfrontbeats.com:3001/",
-    "https://${terraform.workspace}.upfrontbeats.com/",
-    "https://upfrontbeats.com/"
+    "https://local.${var.domain}:3001/",
+    "https://${terraform.workspace}.${var.domain}/",
+    "https://${var.domain}/"
   ]
 
   allowed_oauth_flows_user_pool_client = true
@@ -102,7 +102,7 @@ resource "aws_cognito_user_pool_client" "client" {
 }
 
 resource "aws_cognito_user_pool_domain" "main" {
-  domain       = local.name
+  domain       = var.name
   user_pool_id = aws_cognito_user_pool.pool.id
 }
 
@@ -147,20 +147,4 @@ resource "aws_cognito_identity_provider" "apple" {
   }
 
   idp_identifiers = ["appleid.apple.com"]
-}
-
-output "user_pool_id" {
-  value = aws_cognito_user_pool.pool.id
-}
-
-output "user_pool_arn" {
-  value = aws_cognito_user_pool.pool.arn
-}
-
-output "user_pool_name" {
-  value = aws_cognito_user_pool_client.client.name
-}
-
-output "user_pool_web_client_id" {
-  value = aws_cognito_user_pool_client.client.id
 }

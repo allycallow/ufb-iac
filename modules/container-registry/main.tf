@@ -1,18 +1,6 @@
-locals {
-  repositories = [
-    "backend",
-    "frontend",
-    "airflow",
-    "audio-processing",
-    "search",
-    "track-metadata",
-    "recommendations"
-  ]
-}
-
 resource "aws_ecr_repository" "repos" {
-  for_each             = toset(local.repositories)
-  name                 = "${local.name}-${each.key}"
+  for_each             = toset(var.repositories)
+  name                 = "${var.name}-${each.key}"
   image_tag_mutability = "MUTABLE"
 
   image_scanning_configuration {
@@ -40,8 +28,4 @@ resource "aws_ecr_lifecycle_policy" "repos" {
       }
     ]
   })
-}
-
-output "ecr_repository_names" {
-  value = { for k, v in aws_ecr_repository.repos : k => v.name }
 }
