@@ -1,5 +1,5 @@
 resource "aws_dynamodb_table" "recommendations" {
-  name                        = "${local.name}-recommendations"
+  name                        = var.name
   billing_mode                = "PAY_PER_REQUEST"
   hash_key                    = "PK"
   range_key                   = "SK"
@@ -19,8 +19,8 @@ resource "aws_dynamodb_table" "recommendations" {
     attribute_name = "timeToExist"
     enabled        = true
   }
-}
 
-output "recommendations_table_name" {
-  value = aws_dynamodb_table.recommendations.name
+  tags = merge(var.tags, {
+    Name = var.name
+  })
 }

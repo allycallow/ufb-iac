@@ -115,7 +115,6 @@ module "recommendations" {
   service_connect_namespace = aws_service_discovery_private_dns_namespace.ecs.name
   private_subnets           = module.vpc.private_subnets
   alb_target_group_arn      = module.alb.target_groups["recommendations"].arn
-  table_name                = aws_dynamodb_table.recommendations.name
 }
 
 module "recently-played" {

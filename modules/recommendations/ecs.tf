@@ -134,7 +134,7 @@ module "recommendations_task_definition" {
         "dynamodb:Query"
       ]
       resources = [
-        "arn:aws:dynamodb:eu-west-2:${data.aws_caller_identity.current.account_id}:table/${var.table_name}"
+        aws_dynamodb_table.recommendations.arn
       ]
     }
   ]
