@@ -131,7 +131,8 @@ module "recommendations_task_definition" {
     {
       effect = "Allow"
       actions = [
-        "dynamodb:Query"
+        "dynamodb:Query",
+        "dynamodb:GetItem"
       ]
       resources = [
         aws_dynamodb_table.recommendations.arn
