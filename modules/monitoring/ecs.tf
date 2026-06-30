@@ -27,21 +27,21 @@ module "monitoring_service" {
 
           - job_name: backend
             metrics_path: /metrics
-            scheme: https
+            scheme: http
             static_configs:
-              - targets: ['new-admin.upfrontbeats.com']
+              - targets: ['backend:8000']
 
           - job_name: recommendations
             metrics_path: /metrics
-            scheme: https
+            scheme: http
             static_configs:
-              - targets: ['recommendations.upfrontbeats.com']
+              - targets: ['recommendations:8000']
 
           - job_name: search
             metrics_path: /metrics
-            scheme: https
+            scheme: http
             static_configs:
-              - targets: ['search.upfrontbeats.com']
+              - targets: ['search:8000']
 
           - job_name: airflow
             metrics_path: /metrics
