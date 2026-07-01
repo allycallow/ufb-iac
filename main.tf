@@ -217,6 +217,16 @@ module "recently-played" {
   }
 }
 
+module "idempotency" {
+  source = "./modules/idempotency"
+  stage  = terraform.workspace
+
+  tags = {
+    Environment = terraform.workspace
+    Name        = local.name
+  }
+}
+
 module "monitoring" {
   source = "./modules/monitoring"
 
