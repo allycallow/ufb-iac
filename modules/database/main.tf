@@ -114,14 +114,17 @@ resource "aws_db_instance_role_association" "se_export" {
   role_arn               = aws_iam_role.s3_rds.arn
 }
 
-resource "aws_elasticache_cluster" "redis" {
-  cluster_id           = "${var.name}-app"
-  engine               = "redis"
-  node_type            = "cache.t4g.micro"
-  num_cache_nodes      = 1
-  parameter_group_name = "default.redis7"
-  engine_version       = "7.1"
-  port                 = 6379
-  security_group_ids   = [var.elasticache_sg_id]
-  subnet_group_name    = var.elasticache_subnet_group
+resource "aws_elasticache_replication_group" "redis" {
+  replication_group_id       = "${var.name}-app"
+  description                = "${var.name} redis"
+  engine                     = "redis"
+  engine_version             = "7.1"
+  node_type                  = "cache.t4g.micro"
+  num_cache_clusters         = 1
+  parameter_group_name       = "default.redis7"
+  port                       = 6379
+  security_group_ids         = [var.elasticache_sg_id]
+  subnet_group_name          = var.elasticache_subnet_group
+  transit_encryption_enabled = true
+  at_rest_encryption_enabled = true
 }

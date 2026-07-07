@@ -6,12 +6,16 @@ output "db_instance_identifier" {
   value = module.db.db_instance_identifier
 }
 
+output "db_instance_resource_id" {
+  value = module.db.db_instance_resource_id
+}
+
 output "redis_host" {
-  value = aws_elasticache_cluster.redis.cache_nodes[0].address
+  value = aws_elasticache_replication_group.redis.primary_endpoint_address
 }
 
 output "redis_endpoint" {
-  value = "${aws_elasticache_cluster.redis.cache_nodes[0].address}:${aws_elasticache_cluster.redis.cache_nodes[0].port}"
+  value = "${aws_elasticache_replication_group.redis.primary_endpoint_address}:${aws_elasticache_replication_group.redis.port}"
 }
 
 output "s3_export_policy_arn" {
