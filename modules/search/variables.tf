@@ -66,3 +66,8 @@ variable "service_connect_namespace" {
   description = "Cloud Map namespace name used by ECS Service Connect"
   type        = string
 }
+
+variable "teleport_security_group_id" {
+  description = "Security group ID for the Teleport ECS service"
+  type        = string
+}

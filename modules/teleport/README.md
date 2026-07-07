@@ -65,3 +65,24 @@ The RDS security group only allows traffic from inside the VPC (no bastion/VPN),
 this has to be run from something already in the VPC — e.g. a one-off Fargate task
 using the backend service's task-exec role, pulling the master credentials from the
 same Secrets Manager secret the backend app uses.
+
+## Apps (`search`, `recommendations`)
+
+The Teleport task joins the cluster's ECS Service Connect namespace so it can reach
+these services at their internal `search:8000` / `recommendations:8000` addresses —
+the same addresses the backend service uses (see
+[../backend/ecs.tf](../backend/ecs.tf)).
+
+Access them with a local tunnel, without any public DNS/cert needed:
+
+```
+tsh proxy app search --port=9300
+```
+
+In another terminal:
+
+```
+curl -s http://localhost:9300/
+```
+
+Same pattern for `recommendations`.

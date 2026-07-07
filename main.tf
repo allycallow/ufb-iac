@@ -166,6 +166,8 @@ module "search" {
   vpc_id                    = module.networking.vpc_id
   vpc_cidr_block            = module.networking.vpc_cidr_block
   event_bus_name            = module.eventbridge.eventbridge_bus_arn
+
+  teleport_security_group_id = module.teleport.security_group_id
 }
 
 module "teleport" {
@@ -179,8 +181,9 @@ module "teleport" {
   public_subnets  = module.networking.public_subnets
   private_subnets = module.networking.private_subnets
 
-  ecs_cluster_arn      = module.ecs_cluster.cluster_arn
-  task_exec_policy_arn = module.ecs_cluster.task_exec_policy_arn
+  ecs_cluster_arn           = module.ecs_cluster.cluster_arn
+  task_exec_policy_arn      = module.ecs_cluster.task_exec_policy_arn
+  service_connect_namespace = module.ecs_cluster.service_discovery_namespace_name
 
   zone_id    = data.aws_route53_zone.main.zone_id
   acme_email = var.acme_email
@@ -238,6 +241,8 @@ module "recommendations" {
   service_connect_namespace = module.ecs_cluster.service_discovery_namespace_name
   private_subnets           = module.networking.private_subnets
   alb_target_group_arn      = module.alb.target_groups["recommendations"].arn
+
+  teleport_security_group_id = module.teleport.security_group_id
 }
 
 module "recently-played" {

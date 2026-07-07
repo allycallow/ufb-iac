@@ -104,6 +104,15 @@ module "recommendations_task_definition" {
       description                  = "Allow traffic from backend service"
       referenced_security_group_id = var.backend_security_group_id
     }
+
+    teleport_ingress_8000 = {
+      type                         = "ingress"
+      from_port                    = 8000
+      to_port                      = 8000
+      protocol                     = "tcp"
+      description                  = "Allow traffic from Teleport app service"
+      referenced_security_group_id = var.teleport_security_group_id
+    }
   }
 
 

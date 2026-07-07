@@ -26,6 +26,11 @@ variable "ecs_cluster_arn" {
   type = string
 }
 
+variable "service_connect_namespace" {
+  description = "Cloud Map namespace name used by ECS Service Connect, so Teleport can resolve internal app service DNS names (e.g. search, recommendations)"
+  type        = string
+}
+
 variable "task_exec_policy_arn" {
   type = string
 }
