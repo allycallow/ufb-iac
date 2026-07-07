@@ -18,6 +18,10 @@ output "redis_endpoint" {
   value = "${aws_elasticache_replication_group.redis.primary_endpoint_address}:${aws_elasticache_replication_group.redis.port}"
 }
 
+output "redis_replication_group_id" {
+  value = aws_elasticache_replication_group.redis.replication_group_id
+}
+
 output "s3_export_policy_arn" {
   value = aws_iam_policy.s3_export_policy.arn
 }

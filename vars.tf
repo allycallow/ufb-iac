@@ -43,6 +43,12 @@ variable "apple_key_id" {
   default = "GJ4TSYR776"
 }
 
+variable "acme_email" {
+  description = "Email address used for Teleport's Let's Encrypt ACME registration"
+  type        = string
+  default     = "alex@upfrontbeats.com"
+}
+
 variable "apple_private_key" {
   type        = string
   description = "Contents of Apple private key (.p8) file"

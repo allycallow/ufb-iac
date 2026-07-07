@@ -168,6 +168,40 @@ module "search" {
   event_bus_name            = module.eventbridge.eventbridge_bus_arn
 }
 
+module "teleport" {
+  source = "./modules/teleport"
+
+  name       = local.name
+  region     = local.region
+  account_id = data.aws_caller_identity.current.account_id
+
+  vpc_id          = module.networking.vpc_id
+  public_subnets  = module.networking.public_subnets
+  private_subnets = module.networking.private_subnets
+
+  ecs_cluster_arn      = module.ecs_cluster.cluster_arn
+  task_exec_policy_arn = module.ecs_cluster.task_exec_policy_arn
+
+  zone_id    = data.aws_route53_zone.main.zone_id
+  acme_email = var.acme_email
+
+  db_instance_endpoint    = module.database.db_instance_endpoint
+  db_instance_identifier  = module.database.db_instance_identifier
+  db_instance_resource_id = module.database.db_instance_resource_id
+
+  redis_endpoint             = module.database.redis_endpoint
+  redis_replication_group_id = module.database.redis_replication_group_id
+
+  opensearch_domain_endpoint = module.search.opensearch_domain_endpoint
+  opensearch_domain_arn      = module.search.opensearch_domain_arn
+
+  tags = {
+    Environment = terraform.workspace
+    Name        = local.name
+    Workflow    = "teleport"
+  }
+}
+
 module "track_metadata_processing" {
   source = "./modules/track-metadata"
 

@@ -86,6 +86,10 @@ module "backend_task_definition" {
           "value" : var.redis_host
         },
         {
+          "name" : "REDIS_TLS",
+          "value" : "true"
+        },
+        {
           "name" : "OTEL_EXPORTER_OTLP_ENDPOINT",
           "value" : "http://tempo:4317"
         },
