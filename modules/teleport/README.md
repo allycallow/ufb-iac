@@ -40,3 +40,28 @@ curl -sk https://localhost:9201/_cat/indices?v
 ```
 
 (`-k` is needed because the local tunnel presents a self-signed cert.)
+
+## Postgres (`rds-postgres`)
+
+Teleport connects using IAM auth as the Postgres role named by `--db-user`
+(`teleport_db_username`, default `teleport_svc` — see
+[variables.tf](./variables.tf)):
+
+```
+tsh db connect rds-postgres --db-user=teleport_svc --db-name=ufb
+```
+
+One-time manual setup: that Postgres role must exist and have `rds_iam` granted —
+Terraform only enables `iam_database_authentication_enabled` on the instance, it
+doesn't create the role. If `tsh db connect` fails with `password authentication
+failed for user "teleport_svc"`, run as the master user:
+
+```sql
+CREATE USER teleport_svc WITH LOGIN;
+GRANT rds_iam TO teleport_svc;
+```
+
+The RDS security group only allows traffic from inside the VPC (no bastion/VPN), so
+this has to be run from something already in the VPC — e.g. a one-off Fargate task
+using the backend service's task-exec role, pulling the master credentials from the
+same Secrets Manager secret the backend app uses.
