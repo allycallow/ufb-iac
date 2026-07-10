@@ -28,7 +28,20 @@ module "audio_processing_task_definition" {
       user                   = "0"
       readonlyRootFilesystem = false
 
-      environment = []
+      environment = [
+        {
+          name  = "DRM_ENV"
+          value = "production"
+        },
+        {
+          name  = "CLEARKEY_KEY_ID"
+          value = "24ccd2111fe7cba1ddfd14acd07c0ee9"
+        },
+        {
+          name  = "CLEARKEY_KEY"
+          value = "345dd10bf8be39cab0d7f17449ee74a1"
+        },
+      ]
 
       secrets = [
         {
