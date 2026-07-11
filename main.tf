@@ -143,6 +143,7 @@ module "audio_processing" {
   ecs_cluster_arn  = module.ecs_cluster.cluster_arn
   image_uri        = "${module.container_registry.repository_urls["audio-processing"]}:latest"
   private_subnets  = module.networking.private_subnets
+  event_bus_arn    = module.eventbridge.eventbridge_bus_arn
 }
 
 module "search" {

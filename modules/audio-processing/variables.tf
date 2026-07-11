@@ -33,3 +33,8 @@ variable "private_subnets" {
   description = "List of private subnet IDs for the ECS tasks"
   type        = list(string)
 }
+
+variable "event_bus_arn" {
+  description = "ARN of the EventBridge bus to publish progress events to"
+  type        = string
+}

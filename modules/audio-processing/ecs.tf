@@ -87,6 +87,13 @@ module "audio_processing_task_definition" {
         "s3:*",
       ]
       resources = ["${var.media_bucket_arn}/*"]
+    },
+    {
+      effect = "Allow"
+      actions = [
+        "events:PutEvents",
+      ]
+      resources = [var.event_bus_arn]
     }
   ]
 
