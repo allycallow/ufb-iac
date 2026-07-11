@@ -44,6 +44,18 @@ module "frontend_task_definition" {
           "name" : "REACT_APP_ENDPOINT",
           "value" : "http://backend:8000/graphql"
         },
+        {
+          "name" : "NEXT_PUBLIC_DRM_ENV",
+          "value" : "development"
+        },
+        {
+          "name" : "NEXT_PUBLIC_CLEARKEY_KEY_ID",
+          "value" : "24ccd2111fe7cba1ddfd14acd07c0ee9"
+        },
+        {
+          "name" : "NEXT_PUBLIC_CLEARKEY_KEY",
+          "value" : "345dd10bf8be39cab0d7f17449ee74a1"
+        },
       ]
 
       secrets = []
