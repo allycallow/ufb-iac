@@ -28,6 +28,42 @@ resource "aws_cloudwatch_event_target" "audio_track_events_api_destination" {
   event_bus_name = var.event_bus_name
   arn            = aws_cloudwatch_event_api_destination.audio_track_destination.arn
   role_arn       = aws_iam_role.audio_track_events_role.arn
+
+  dead_letter_config {
+    arn = aws_sqs_queue.audio_track_events_dlq.arn
+  }
+
+  retry_policy {
+    maximum_event_age_in_seconds = 3600
+    maximum_retry_attempts       = 3
+  }
+}
+
+resource "aws_sqs_queue" "audio_track_events_dlq" {
+  name                      = "${var.name}-audio-track-events-dlq"
+  message_retention_seconds = 1209600 # 14 days
+}
+
+resource "aws_sqs_queue_policy" "audio_track_events_dlq" {
+  queue_url = aws_sqs_queue.audio_track_events_dlq.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "AllowEventBridgeRule"
+        Effect    = "Allow"
+        Principal = { Service = "events.amazonaws.com" }
+        Action    = "sqs:SendMessage"
+        Resource  = aws_sqs_queue.audio_track_events_dlq.arn
+        Condition = {
+          ArnEquals = {
+            "aws:SourceArn" = aws_cloudwatch_event_rule.audio_track_events.arn
+          }
+        }
+      }
+    ]
+  })
 }
 
 resource "aws_cloudwatch_event_api_destination" "audio_track_destination" {
