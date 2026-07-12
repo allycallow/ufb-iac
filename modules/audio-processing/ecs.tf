@@ -9,7 +9,7 @@ module "audio_processing_task_definition" {
   name        = "${terraform.workspace}-audio-processing"
   cluster_arn = var.ecs_cluster_arn
 
-  create_service = false
+  force_new_deployment = true
 
   runtime_platform = {
     cpu_architecture        = "ARM64"
@@ -41,6 +41,10 @@ module "audio_processing_task_definition" {
           name  = "CLEARKEY_KEY"
           value = "345dd10bf8be39cab0d7f17449ee74a1"
         },
+        {
+          name  = "SENTRY_ENVIRONMENT"
+          value = "production"
+        },
       ]
 
       secrets = [
@@ -51,6 +55,10 @@ module "audio_processing_task_definition" {
         {
           name      = "EZDRM_PASS",
           valueFrom = "arn:aws:secretsmanager:eu-west-2:${data.aws_caller_identity.current.account_id}:secret:prod/ufb/audio-processing-8b85Fv:EZDRM_PASS::"
+        },
+        {
+          name      = "SENTRY_DSN",
+          valueFrom = "arn:aws:secretsmanager:eu-west-2:${data.aws_caller_identity.current.account_id}:secret:prod/ufb/audio-processing-8b85Fv:SENTRY_DSN::"
         },
       ]
 
