@@ -9,7 +9,7 @@ module "audio_processing_task_definition" {
   name        = "${terraform.workspace}-audio-processing"
   cluster_arn = var.ecs_cluster_arn
 
-  force_new_deployment = true
+  create_service = false
 
   runtime_platform = {
     cpu_architecture        = "ARM64"
