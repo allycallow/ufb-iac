@@ -86,6 +86,16 @@ module "teleport_task_definition" {
 
   volume = {
     "teleport-config" = {}
+    "teleport-data" = {
+      efs_volume_configuration = {
+        file_system_id     = aws_efs_file_system.teleport_data.id
+        transit_encryption = "ENABLED"
+        authorization_config = {
+          access_point_id = aws_efs_access_point.teleport_data.id
+          iam             = "ENABLED"
+        }
+      }
+    }
   }
 
   container_definitions = {
@@ -135,6 +145,11 @@ module "teleport_task_definition" {
           sourceVolume  = "teleport-config"
           containerPath = "/etc/teleport"
           readOnly      = true
+        },
+        {
+          sourceVolume  = "teleport-data"
+          containerPath = "/var/lib/teleport"
+          readOnly      = false
         }
       ]
 
@@ -214,6 +229,32 @@ module "teleport_task_definition" {
         "rds:DescribeDBInstances"
       ]
       resources = ["*"]
+    },
+    {
+      sid    = "ElastiCacheDescribe"
+      effect = "Allow"
+      actions = [
+        "elasticache:DescribeReplicationGroups",
+        "elasticache:DescribeCacheClusters"
+      ]
+      resources = ["*"]
+    },
+    {
+      sid    = "TeleportDataEfsAccess"
+      effect = "Allow"
+      actions = [
+        "elasticfilesystem:ClientMount",
+        "elasticfilesystem:ClientWrite",
+        "elasticfilesystem:ClientRootAccess"
+      ]
+      resources = [aws_efs_file_system.teleport_data.arn]
+      condition = [
+        {
+          test     = "StringEquals"
+          variable = "elasticfilesystem:AccessPointArn"
+          values   = [aws_efs_access_point.teleport_data.arn]
+        }
+      ]
     },
     {
       sid    = "AssumeOpenSearchRole"
