@@ -125,6 +125,15 @@ module "search_task_definition" {
       description                  = "Allow traffic from Teleport app service"
       referenced_security_group_id = var.teleport_security_group_id
     }
+
+    monitoring_ingress_8000 = {
+      type                         = "ingress"
+      from_port                    = 8000
+      to_port                      = 8000
+      protocol                     = "tcp"
+      description                  = "Allow traffic from monitoring service"
+      referenced_security_group_id = var.monitoring_security_group_id
+    }
   }
 
 

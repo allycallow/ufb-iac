@@ -168,7 +168,8 @@ module "search" {
   vpc_cidr_block            = module.networking.vpc_cidr_block
   event_bus_name            = module.eventbridge.eventbridge_bus_arn
 
-  teleport_security_group_id = module.teleport.security_group_id
+  teleport_security_group_id   = module.teleport.security_group_id
+  monitoring_security_group_id = module.monitoring.security_group_id
 }
 
 module "teleport" {
@@ -243,7 +244,8 @@ module "recommendations" {
   private_subnets           = module.networking.private_subnets
   alb_target_group_arn      = module.alb.target_groups["recommendations"].arn
 
-  teleport_security_group_id = module.teleport.security_group_id
+  teleport_security_group_id   = module.teleport.security_group_id
+  monitoring_security_group_id = module.monitoring.security_group_id
 }
 
 module "recently-played" {

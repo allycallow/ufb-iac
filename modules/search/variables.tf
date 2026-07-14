@@ -71,3 +71,8 @@ variable "teleport_security_group_id" {
   description = "Security group ID for the Teleport ECS service"
   type        = string
 }
+
+variable "monitoring_security_group_id" {
+  description = "Security group ID of the monitoring ECS service"
+  type        = string
+}
