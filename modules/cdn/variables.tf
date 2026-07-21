@@ -34,6 +34,10 @@ variable "media_public_key_pem" {
   type = string
 }
 
+variable "preview_public_key_pem" {
+  type = string
+}
+
 variable "viewer_response_lambda_arn" {
   type = string
 }

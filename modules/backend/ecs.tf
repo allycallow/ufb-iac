@@ -66,6 +66,10 @@ module "backend_task_definition" {
           "value" : var.cf_media_key_id
         },
         {
+          "name" : "CF_PREVIEW_KEY_ID",
+          "value" : var.cf_preview_key_id
+        },
+        {
           "name" : "EVENT_BUS_NAME",
           "value" : var.event_bus_name
         },
@@ -127,6 +131,10 @@ module "backend_task_definition" {
         {
           "name" : "MEDIA_PRIVATE_KEY_VALUE",
           "valueFrom" : var.media_private_key_arn
+        },
+        {
+          "name" : "PREVIEW_PRIVATE_KEY_VALUE",
+          "valueFrom" : var.preview_private_key_arn
         },
         {
           "name" : "STRIPE_API_KEY",

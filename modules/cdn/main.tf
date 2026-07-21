@@ -27,6 +27,18 @@ resource "aws_cloudfront_key_group" "cf_media_keygroup" {
   name  = "${random_id.media_id.hex}-group"
 }
 
+# Separate trust tier for preview cookies. Full-track cookies are never
+# signed with this key, so they can't unlock the /audio/* (full-track)
+# behavior even if a signed cookie's Resource policy were scoped too broadly.
+resource "aws_cloudfront_public_key" "cf_preview_key" {
+  encoded_key = var.preview_public_key_pem
+}
+
+resource "aws_cloudfront_key_group" "cf_preview_keygroup" {
+  items = [aws_cloudfront_public_key.cf_preview_key.id]
+  name  = "${random_id.media_id.hex}-preview-group"
+}
+
 resource "aws_cloudfront_cache_policy" "audio_segments" {
   name    = "${terraform.workspace}-audio-segments-no-cache"
   comment = "Zero-TTL for encrypted CMAF segments. Prevents 304s that break DRM session decryption."
@@ -125,8 +137,9 @@ resource "aws_cloudfront_distribution" "media" {
     cache_policy_id          = data.aws_cloudfront_cache_policy.this.id
   }
 
-  # Audio previews — publicly playable, no signed cookies required. Must precede
-  # the /audio/* behavior below since CloudFront matches path patterns in list order.
+  # Audio previews — requires an authenticated-tier signed cookie (cf_preview_keygroup).
+  # Must precede the /audio/* behavior below since CloudFront matches path patterns
+  # in list order.
   ordered_cache_behavior {
     path_pattern               = "/audio/*/preview.mp3"
     allowed_methods            = ["GET", "HEAD", "OPTIONS"]
@@ -134,6 +147,7 @@ resource "aws_cloudfront_distribution" "media" {
     target_origin_id           = var.media_bucket_id
     compress                   = true
     viewer_protocol_policy     = "redirect-to-https"
+    trusted_key_groups         = [aws_cloudfront_key_group.cf_preview_keygroup.id]
     origin_request_policy_id   = data.aws_cloudfront_origin_request_policy.this.id
     cache_policy_id            = data.aws_cloudfront_cache_policy.this.id
     response_headers_policy_id = aws_cloudfront_response_headers_policy.custom.id

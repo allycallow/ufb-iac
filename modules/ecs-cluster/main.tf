@@ -33,7 +33,8 @@ resource "aws_iam_policy" "ecs_task_exec_policy" {
           "ssm:GetParameterHistory"
         ]
         Resource = [
-          var.ssm_media_private_key_arn
+          var.ssm_media_private_key_arn,
+          var.ssm_preview_private_key_arn
         ]
       }
     ]

@@ -14,8 +14,14 @@ resource "random_password" "events" {
 
 resource "aws_ssm_parameter" "media_private_key" {
   name  = "/ufb/${terraform.workspace}/media-private-key"
-  type  = "String"
+  type  = "SecureString"
   value = tls_private_key.media.private_key_pem
+}
+
+resource "aws_ssm_parameter" "preview_media_private_key" {
+  name  = "/ufb/${terraform.workspace}/preview-media-private-key"
+  type  = "SecureString"
+  value = tls_private_key.preview_media.private_key_pem
 }
 
 resource "aws_ssm_parameter" "events_api_key" {
@@ -26,4 +32,8 @@ resource "aws_ssm_parameter" "events_api_key" {
 
 output "media_private_key_secret_name" {
   value = aws_ssm_parameter.media_private_key.name
+}
+
+output "preview_media_private_key_secret_name" {
+  value = aws_ssm_parameter.preview_media_private_key.name
 }

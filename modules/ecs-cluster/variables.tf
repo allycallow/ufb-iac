@@ -18,6 +18,10 @@ variable "ssm_media_private_key_arn" {
   type = string
 }
 
+variable "ssm_preview_private_key_arn" {
+  type = string
+}
+
 variable "secret_prefix" {
   type = string
 }

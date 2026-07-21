@@ -79,6 +79,7 @@ module "cdn" {
   frontend_bucket_arn        = module.storage.frontend_bucket_arn
   alb_dns_name               = module.alb.dns_name
   media_public_key_pem       = tls_private_key.media.public_key_pem
+  preview_public_key_pem     = tls_private_key.preview_media.public_key_pem
   viewer_response_lambda_arn = var.viewer_response_lambda_arn
   viewer_request_lambda_arn  = var.viewer_request_lambda_arn
   origin_response_lambda_arn = var.origin_response_lambda_arn
@@ -104,9 +105,10 @@ module "ecs_cluster" {
   name                      = local.name
   region                    = local.region
   account_id                = data.aws_caller_identity.current.account_id
-  vpc_id                    = module.networking.vpc_id
-  ssm_media_private_key_arn = aws_ssm_parameter.media_private_key.arn
-  secret_prefix             = local.secret_prefix
+  vpc_id                      = module.networking.vpc_id
+  ssm_media_private_key_arn   = aws_ssm_parameter.media_private_key.arn
+  ssm_preview_private_key_arn = aws_ssm_parameter.preview_media_private_key.arn
+  secret_prefix               = local.secret_prefix
 }
 
 module "database" {
@@ -335,10 +337,12 @@ module "backend" {
   cognito_app_client_id        = module.auth.user_pool_web_client_id
   cognito_user_pool_arn        = module.auth.user_pool_arn
   cf_media_key_id              = module.cdn.cf_media_key_id
+  cf_preview_key_id            = module.cdn.cf_preview_key_id
   event_bus_name               = module.eventbridge.eventbridge_bus_name
   event_bus_arn                = module.eventbridge.eventbridge_bus_arn
   redis_host                   = module.database.redis_host
   media_private_key_arn        = aws_ssm_parameter.media_private_key.arn
+  preview_private_key_arn      = aws_ssm_parameter.preview_media_private_key.arn
   secret_prefix                = local.secret_prefix
   task_exec_policy_arn         = module.ecs_cluster.task_exec_policy_arn
 }

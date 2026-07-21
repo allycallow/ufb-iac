@@ -78,6 +78,11 @@ variable "cf_media_key_id" {
   type        = string
 }
 
+variable "cf_preview_key_id" {
+  description = "ID of the CloudFront public key for preview (auth-only) signing"
+  type        = string
+}
+
 variable "event_bus_name" {
   description = "Name of the EventBridge event bus"
   type        = string
@@ -95,6 +100,11 @@ variable "redis_host" {
 
 variable "media_private_key_arn" {
   description = "ARN of the SSM parameter containing the CloudFront media private key"
+  type        = string
+}
+
+variable "preview_private_key_arn" {
+  description = "ARN of the SSM parameter containing the CloudFront preview private key"
   type        = string
 }
 
