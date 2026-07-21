@@ -23,19 +23,6 @@ resource "aws_iam_policy" "ecs_task_exec_policy" {
           "kms:Decrypt"
         ]
         Resource = "*"
-      },
-      {
-        Sid    = "SSMParameterAccess"
-        Effect = "Allow"
-        Action = [
-          "ssm:GetParameter",
-          "ssm:GetParameters",
-          "ssm:GetParameterHistory"
-        ]
-        Resource = [
-          var.ssm_media_private_key_arn,
-          var.ssm_preview_private_key_arn
-        ]
       }
     ]
   })

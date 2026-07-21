@@ -102,13 +102,11 @@ module "auth" {
 module "ecs_cluster" {
   source = "./modules/ecs-cluster"
 
-  name                      = local.name
-  region                    = local.region
-  account_id                = data.aws_caller_identity.current.account_id
-  vpc_id                      = module.networking.vpc_id
-  ssm_media_private_key_arn   = aws_ssm_parameter.media_private_key.arn
-  ssm_preview_private_key_arn = aws_ssm_parameter.preview_media_private_key.arn
-  secret_prefix               = local.secret_prefix
+  name          = local.name
+  region        = local.region
+  account_id    = data.aws_caller_identity.current.account_id
+  vpc_id        = module.networking.vpc_id
+  secret_prefix = local.secret_prefix
 }
 
 module "database" {
@@ -341,8 +339,6 @@ module "backend" {
   event_bus_name               = module.eventbridge.eventbridge_bus_name
   event_bus_arn                = module.eventbridge.eventbridge_bus_arn
   redis_host                   = module.database.redis_host
-  media_private_key_arn        = aws_ssm_parameter.media_private_key.arn
-  preview_private_key_arn      = aws_ssm_parameter.preview_media_private_key.arn
   secret_prefix                = local.secret_prefix
   task_exec_policy_arn         = module.ecs_cluster.task_exec_policy_arn
 }

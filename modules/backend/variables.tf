@@ -98,16 +98,6 @@ variable "redis_host" {
   type        = string
 }
 
-variable "media_private_key_arn" {
-  description = "ARN of the SSM parameter containing the CloudFront media private key"
-  type        = string
-}
-
-variable "preview_private_key_arn" {
-  description = "ARN of the SSM parameter containing the CloudFront preview private key"
-  type        = string
-}
-
 variable "secret_prefix" {
   description = "ARN prefix for the backend Secrets Manager secret"
   type        = string

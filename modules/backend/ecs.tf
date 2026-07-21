@@ -130,11 +130,11 @@ module "backend_task_definition" {
         },
         {
           "name" : "MEDIA_PRIVATE_KEY_VALUE",
-          "valueFrom" : var.media_private_key_arn
+          "valueFrom" : "${var.secret_prefix}:media_private_key::"
         },
         {
           "name" : "PREVIEW_PRIVATE_KEY_VALUE",
-          "valueFrom" : var.preview_private_key_arn
+          "valueFrom" : "${var.secret_prefix}:preview_private_key::"
         },
         {
           "name" : "STRIPE_API_KEY",
