@@ -152,6 +152,15 @@ module "search_task_definition" {
       referenced_security_group_id = var.teleport_security_group_id
     }
 
+    teleport_ingress_50051 = {
+      type                         = "ingress"
+      from_port                    = 50051
+      to_port                      = 50051
+      protocol                     = "tcp"
+      description                  = "Allow gRPC traffic from Teleport app service"
+      referenced_security_group_id = var.teleport_security_group_id
+    }
+
     monitoring_ingress_8000 = {
       type                         = "ingress"
       from_port                    = 8000

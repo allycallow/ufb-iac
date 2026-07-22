@@ -62,6 +62,8 @@ locals {
       apps:
       - name: search
         uri: http://search:8000
+      - name: search-grpc
+        uri: tcp://search:50051
       - name: recommendations
         uri: http://recommendations:8000
   EOF
