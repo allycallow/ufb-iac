@@ -74,12 +74,8 @@ module "backend_task_definition" {
           "value" : var.event_bus_name
         },
         {
-          "name" : "RECOMMENDATIONS_ENDPOINT",
-          "value" : "http://recommendations:8000"
-        },
-        {
-          "name" : "SEARCH_ENDPOINT",
-          "value" : "http://search:8000/api"
+          "name" : "RECOMMENDATIONS_GRPC_ENDPOINT",
+          "value" : "recommendations:50051"
         },
         {
           "name" : "SEARCH_GRPC_ENDPOINT",

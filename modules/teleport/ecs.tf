@@ -66,6 +66,8 @@ locals {
         uri: tcp://search:50051
       - name: recommendations
         uri: http://recommendations:8000
+      - name: recommendations-grpc
+        uri: tcp://recommendations:50051
   EOF
 }
 
