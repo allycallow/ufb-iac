@@ -27,6 +27,13 @@ module "search_task_definition" {
           containerPort = 8000
           hostPort      = 8000
           protocol      = "tcp"
+        },
+        {
+          name          = "search-grpc"
+          containerPort = 50051
+          hostPort      = 50051
+          protocol      = "tcp"
+          appProtocol   = "grpc"
         }
       ]
 
@@ -88,14 +95,24 @@ module "search_task_definition" {
   service_connect_configuration = {
     enabled   = true
     namespace = var.service_connect_namespace
-    service = [{
-      port_name      = "search"
-      discovery_name = "search-sc"
-      client_alias = {
-        dns_name = "search"
-        port     = 8000
+    service = [
+      {
+        port_name      = "search"
+        discovery_name = "search-sc"
+        client_alias = {
+          dns_name = "search"
+          port     = 8000
+        }
+      },
+      {
+        port_name      = "search-grpc"
+        discovery_name = "search-grpc-sc"
+        client_alias = {
+          dns_name = "search"
+          port     = 50051
+        }
       }
-    }]
+    ]
   }
 
   security_group_ingress_rules = {
@@ -114,6 +131,15 @@ module "search_task_definition" {
       to_port                      = 8000
       protocol                     = "tcp"
       description                  = "Allow traffic from backend service"
+      referenced_security_group_id = var.backend_security_group_id
+    }
+
+    backend_ingress_50051 = {
+      type                         = "ingress"
+      from_port                    = 50051
+      to_port                      = 50051
+      protocol                     = "tcp"
+      description                  = "Allow gRPC traffic from backend service"
       referenced_security_group_id = var.backend_security_group_id
     }
 

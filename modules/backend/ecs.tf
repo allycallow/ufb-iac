@@ -82,6 +82,10 @@ module "backend_task_definition" {
           "value" : "http://search:8000/api"
         },
         {
+          "name" : "SEARCH_GRPC_ENDPOINT",
+          "value" : "search:50051"
+        },
+        {
           "name" : "RUDDER_STACK_DATA_PLANE_URL",
           "value" : "https://upfrontbeajzbi.dataplane.rudderstack.com"
         },
