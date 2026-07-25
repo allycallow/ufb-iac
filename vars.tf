@@ -10,12 +10,12 @@ variable "viewer_response_lambda_arn" {
 
 variable "viewer_request_lambda_arn" {
   type    = string
-  default = "arn:aws:lambda:us-east-1:081077757258:function:production-ufb-reviewer-request:8"
+  default = "arn:aws:lambda:us-east-1:081077757258:function:production-ufb-reviewer-request:9"
 }
 
 variable "origin_response_lambda_arn" {
   type    = string
-  default = "arn:aws:lambda:us-east-1:081077757258:function:production-ufb-origin-response:93"
+  default = "arn:aws:lambda:us-east-1:081077757258:function:production-ufb-origin-response:94"
 }
 
 variable "google_client_id" {

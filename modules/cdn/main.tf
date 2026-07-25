@@ -65,6 +65,32 @@ resource "aws_cloudfront_cache_policy" "audio_segments" {
   }
 }
 
+resource "aws_cloudfront_cache_policy" "images_immutable" {
+  name    = "${terraform.workspace}-images-immutable"
+  comment = "Long TTL for resized image derivatives - key encodes width/format/quality so bytes never change once generated."
+
+  default_ttl = 31536000
+  min_ttl     = 1
+  max_ttl     = 31536000
+
+  parameters_in_cache_key_and_forwarded_to_origin {
+    enable_accept_encoding_brotli = true
+    enable_accept_encoding_gzip   = true
+
+    cookies_config {
+      cookie_behavior = "none"
+    }
+
+    headers_config {
+      header_behavior = "none"
+    }
+
+    query_strings_config {
+      query_string_behavior = "none"
+    }
+  }
+}
+
 resource "aws_cloudfront_response_headers_policy" "custom" {
   name    = "${terraform.workspace}-CORS-With-Preflight"
   comment = "Custom response policy"
@@ -172,13 +198,10 @@ resource "aws_cloudfront_distribution" "media" {
     allowed_methods          = ["GET", "HEAD", "OPTIONS"]
     cached_methods           = ["GET", "HEAD", "OPTIONS"]
     target_origin_id         = var.media_bucket_id
-    min_ttl                  = 0
-    default_ttl              = 3600
-    max_ttl                  = 86400
     compress                 = true
     viewer_protocol_policy   = "redirect-to-https"
     origin_request_policy_id = data.aws_cloudfront_origin_request_policy.this.id
-    cache_policy_id          = data.aws_cloudfront_cache_policy.this.id
+    cache_policy_id          = aws_cloudfront_cache_policy.images_immutable.id
 
     lambda_function_association {
       event_type   = "viewer-response"
