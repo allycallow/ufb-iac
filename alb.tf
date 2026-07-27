@@ -228,7 +228,7 @@ module "alb" {
           }]
         }
 
-        search = {
+        search_disabled = {
           priority = 4
           conditions = [{
             host_header = {
@@ -236,12 +236,14 @@ module "alb" {
             }
           }]
           actions = [{
-            type             = "forward"
-            target_group_key = "search"
+            type         = "fixed-response"
+            content_type = "text/plain"
+            message_body = "Not Found"
+            status_code  = "404"
           }]
         }
 
-        recommendations = {
+        recommendations_disabled = {
           priority = 5
           conditions = [{
             host_header = {
@@ -249,8 +251,10 @@ module "alb" {
             }
           }]
           actions = [{
-            type             = "forward"
-            target_group_key = "recommendations"
+            type         = "fixed-response"
+            content_type = "text/plain"
+            message_body = "Not Found"
+            status_code  = "404"
           }]
         }
 

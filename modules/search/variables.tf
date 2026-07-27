@@ -52,11 +52,6 @@ variable "secret_prefix" {
   default     = "arn:aws:secretsmanager:eu-west-2:081077757258:secret:/ufb/production/search-ec4ayE"
 }
 
-variable "event_bus_name" {
-  description = "Name of the EventBridge event bus to use for search events"
-  type        = string
-}
-
 variable "backend_security_group_id" {
   description = "Security group ID for the backend ECS service"
   type        = string

@@ -1,6 +1,24 @@
+data "aws_caller_identity" "search_current" {}
+
+locals {
+  opensearch_domain_arn = "arn:aws:es:eu-west-2:${data.aws_caller_identity.search_current.account_id}:domain/ufb-production"
+}
+
 resource "aws_opensearch_domain" "main" {
   domain_name    = "ufb-production"
   engine_version = "OpenSearch_2.11"
+
+  access_policies = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect    = "Allow"
+        Principal = { AWS = "*" }
+        Action    = "es:*"
+        Resource  = "${local.opensearch_domain_arn}/*"
+      }
+    ]
+  })
 
   cluster_config {
     instance_type  = "t3.small.search"

@@ -82,6 +82,10 @@ module "backend_task_definition" {
           "value" : "search:50051"
         },
         {
+          "name" : "KAFKA_BOOTSTRAP_SERVERS",
+          "value" : "kafka:9092"
+        },
+        {
           "name" : "RUDDER_STACK_DATA_PLANE_URL",
           "value" : "https://upfrontbeajzbi.dataplane.rudderstack.com"
         },
