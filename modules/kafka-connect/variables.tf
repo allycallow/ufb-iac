@@ -33,6 +33,11 @@ variable "opensearch_domain_arn" {
   type        = string
 }
 
+variable "audio_upload_queue_arn" {
+  description = "ARN of the SQS queue the audio-upload source connector reads from, for scoping the task role's sqs:* permissions"
+  type        = string
+}
+
 variable "cpu" {
   type    = number
   default = 512

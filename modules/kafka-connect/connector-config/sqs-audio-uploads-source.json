@@ -1,0 +1,23 @@
+{
+  "name": "sqs-audio-uploads-source",
+  "config": {
+    "connector.class": "org.apache.camel.kafkaconnector.aws2sqs.CamelAws2sqsSourceConnector",
+    "tasks.max": "1",
+    "topics": "ufb.audio_uploads",
+
+    "camel.source.path.queueNameOrArn": "arn:aws:sqs:eu-west-2:081077757258:production-ufb-audio-processing",
+    "camel.source.endpoint.region": "eu-west-2",
+    "camel.source.endpoint.protocol": "https",
+    "camel.source.endpoint.useDefaultCredentialsProvider": "true",
+    "camel.source.endpoint.autoCreateQueue": "false",
+    "camel.source.endpoint.deleteAfterRead": "true",
+    "camel.source.endpoint.waitTimeSeconds": "20",
+    "camel.source.endpoint.maxMessagesPerPoll": "10",
+
+    "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+    "value.converter": "org.apache.kafka.connect.storage.StringConverter",
+
+    "errors.tolerance": "all",
+    "errors.log.enable": "true"
+  }
+}

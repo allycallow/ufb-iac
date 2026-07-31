@@ -137,6 +137,15 @@ module "worker" {
   create_security_group = false
   security_group_ids    = [aws_security_group.worker.id]
 
+  # Client-only Service Connect: no `service` block, so the worker publishes
+  # nothing of its own. It only needs this to resolve other Service
+  # Connect-enabled dependencies (e.g. `kafka:9092`) by short name through the
+  # sidecar proxy — the same reason modules/backend enables it.
+  service_connect_configuration = {
+    enabled   = true
+    namespace = var.service_discovery_namespace_name
+  }
+
   create_task_exec_iam_role = true
   task_exec_iam_role_name   = "${var.name}-worker-exec"
   task_exec_iam_role_policies = merge(
@@ -144,8 +153,9 @@ module "worker" {
     length(var.worker_secret_arns) > 0 ? { secrets = aws_iam_policy.worker_secrets[0].arn } : {},
   )
 
-  create_tasks_iam_role = true
-  tasks_iam_role_name   = "${var.name}-worker-task"
+  create_tasks_iam_role     = true
+  tasks_iam_role_name       = "${var.name}-worker-task"
+  tasks_iam_role_statements = var.worker_task_role_statements
   tasks_iam_role_policies = length(var.worker_secret_arns) > 0 ? {
     secrets = aws_iam_policy.worker_secrets[0].arn
   } : {}

@@ -545,6 +545,26 @@ variable "worker_secret_arns" {
   default     = []
 }
 
+variable "worker_task_role_statements" {
+  description = <<-EOT
+    Extra inline IAM statements for the worker's task role, beyond secrets
+    access — e.g. ecs:RunTask/DescribeTasks and iam:PassRole for the ECS task
+    definitions a workflow drives via RunTask activities.
+  EOT
+  type = list(object({
+    sid       = optional(string)
+    effect    = string
+    actions   = list(string)
+    resources = list(string)
+    condition = optional(list(object({
+      test     = string
+      values   = list(string)
+      variable = string
+    })))
+  }))
+  default = []
+}
+
 # ── Observability ─────────────────────────────────────────────────────────────
 
 variable "log_retention_days" {

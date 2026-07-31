@@ -38,3 +38,8 @@ variable "event_bus_arn" {
   description = "ARN of the EventBridge bus to publish progress events to"
   type        = string
 }
+
+variable "service_connect_namespace" {
+  description = "Cloud Map namespace name used by ECS Service Connect, for client-only access to Kafka"
+  type        = string
+}

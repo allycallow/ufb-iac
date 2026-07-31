@@ -33,3 +33,8 @@ variable "private_subnets" {
   description = "List of private subnet IDs for the ECS tasks"
   type        = list(string)
 }
+
+variable "service_connect_namespace" {
+  description = "Cloud Map namespace name used by ECS Service Connect, for client-only access to Kafka"
+  type        = string
+}

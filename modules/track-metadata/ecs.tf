@@ -30,16 +30,13 @@ module "track_metadata_processing_task_definition" {
 
       environment = [
         {
-          name  = "BACKEND_ENDPOINT"
-          value = "https://new-admin.upfrontbeats.com"
-        }
-      ]
-
-      secrets = [
+          name  = "KAFKA_BOOTSTRAP_SERVERS"
+          value = "kafka:9092"
+        },
         {
-          name      = "BACKEND_API_KEY"
-          valueFrom = "arn:aws:secretsmanager:eu-west-2:${data.aws_caller_identity.current.account_id}:secret:prod/ufb/backend-NKRahZ:API_KEY::"
-        }
+          name  = "KAFKA_TRACK_PROCESSING_EVENTS_TOPIC"
+          value = "ufb.track_processing_events"
+        },
       ]
 
       logConfiguration = {
@@ -54,6 +51,15 @@ module "track_metadata_processing_task_definition" {
   }
 
   subnet_ids = var.private_subnets
+
+  # Client-only Service Connect: no `service` block, so this publishes
+  # nothing of its own. It only needs this to resolve Kafka (`kafka:9092`)
+  # by short name through the sidecar proxy, to publish its saga result —
+  # same reason modules/temporal's worker enables it.
+  service_connect_configuration = {
+    enabled   = true
+    namespace = var.service_connect_namespace
+  }
 
   security_group_egress_rules = {
     all = {

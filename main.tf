@@ -140,12 +140,13 @@ module "audio_processing" {
     Workflow    = "audio-processing"
   }
 
-  media_bucket_arn = module.storage.media_bucket_arn
-  media_bucket_id  = module.storage.media_bucket_id
-  ecs_cluster_arn  = module.ecs_cluster.cluster_arn
-  image_uri        = "${module.container_registry.repository_urls["audio-processing"]}:latest"
-  private_subnets  = module.networking.private_subnets
-  event_bus_arn    = module.eventbridge.eventbridge_bus_arn
+  media_bucket_arn          = module.storage.media_bucket_arn
+  media_bucket_id           = module.storage.media_bucket_id
+  ecs_cluster_arn           = module.ecs_cluster.cluster_arn
+  image_uri                 = "${module.container_registry.repository_urls["audio-processing"]}:latest"
+  private_subnets           = module.networking.private_subnets
+  event_bus_arn             = module.eventbridge.eventbridge_bus_arn
+  service_connect_namespace = module.ecs_cluster.service_discovery_namespace_name
 }
 
 module "search" {
@@ -192,7 +193,10 @@ module "kafka" {
 
   client_security_group_ids = [
     module.backend.security_group_id,
-    module.kafka_connect.security_group_id
+    module.kafka_connect.security_group_id,
+    module.temporal.worker_security_group_id,
+    module.audio_processing.security_group_id,
+    module.track_metadata_processing.security_group_id,
   ]
 }
 
@@ -214,6 +218,7 @@ module "kafka_connect" {
   task_exec_policy_arn      = module.ecs_cluster.task_exec_policy_arn
   image_uri                 = "${module.container_registry.repository_urls["kafka-connect"]}:latest"
   opensearch_domain_arn     = module.search.opensearch_domain_arn
+  audio_upload_queue_arn    = module.audio_processing.queue_arn
 }
 
 module "teleport" {
@@ -262,11 +267,12 @@ module "track_metadata_processing" {
     Workflow    = "tm-processing"
   }
 
-  media_bucket_arn = module.storage.media_bucket_arn
-  media_bucket_id  = module.storage.media_bucket_id
-  ecs_cluster_arn  = module.ecs_cluster.cluster_arn
-  image_uri        = "${module.container_registry.repository_urls["track-metadata"]}:latest"
-  private_subnets  = module.networking.private_subnets
+  media_bucket_arn          = module.storage.media_bucket_arn
+  media_bucket_id           = module.storage.media_bucket_id
+  ecs_cluster_arn           = module.ecs_cluster.cluster_arn
+  image_uri                 = "${module.container_registry.repository_urls["track-metadata"]}:latest"
+  private_subnets           = module.networking.private_subnets
+  service_connect_namespace = module.ecs_cluster.service_discovery_namespace_name
 }
 
 module "recommendations" {
@@ -430,6 +436,64 @@ module "temporal" {
     module.monitoring.security_group_id,
   ]
 
+  # TrackIngestionSagaWorkflow's trigger topic, and the ECS RunTask activities
+  # it drives — audio-processing and track-metadata, invoked the same way
+  # Airflow's EcsRunTaskOperator used to.
+  worker_environment = {
+    KAFKA_BOOTSTRAP_SERVERS   = "kafka:9092"
+    KAFKA_AUDIO_UPLOADS_TOPIC = "ufb.audio_uploads"
+
+    BACKEND_ENDPOINT = "https://new-admin.upfrontbeats.com"
+
+    ECS_CLUSTER = module.ecs_cluster.cluster_name
+    ECS_SUBNETS = join(",", module.networking.private_subnets)
+
+    AUDIO_PROCESSING_TASK_DEFINITION = module.audio_processing.task_definition_family
+    AUDIO_PROCESSING_CONTAINER_NAME  = "audio-processing"
+    AUDIO_PROCESSING_SECURITY_GROUP  = module.audio_processing.security_group_id
+
+    TRACK_METADATA_TASK_DEFINITION = module.track_metadata_processing.task_definition_family
+    TRACK_METADATA_CONTAINER_NAME  = "tm-processing"
+    TRACK_METADATA_SECURITY_GROUP  = module.track_metadata_processing.security_group_id
+  }
+
+  worker_secrets = {
+    BACKEND_API_KEY = "${local.secret_prefix}:API_KEY::"
+  }
+  worker_secret_arns = [local.secret_prefix]
+
+  worker_task_role_statements = [
+    {
+      sid    = "RunAudioPipelineTasks"
+      effect = "Allow"
+      actions = [
+        "ecs:RunTask",
+        "ecs:DescribeTasks",
+      ]
+      resources = [
+        "arn:aws:ecs:${local.region}:${data.aws_caller_identity.current.account_id}:task-definition/${module.audio_processing.task_definition_family}:*",
+        "arn:aws:ecs:${local.region}:${data.aws_caller_identity.current.account_id}:task-definition/${module.track_metadata_processing.task_definition_family}:*",
+        "arn:aws:ecs:${local.region}:${data.aws_caller_identity.current.account_id}:task/${module.ecs_cluster.cluster_name}/*",
+      ]
+    },
+    {
+      sid     = "PassAudioPipelineTaskRoles"
+      effect  = "Allow"
+      actions = ["iam:PassRole"]
+      resources = [
+        module.audio_processing.task_role_arn,
+        module.audio_processing.task_exec_role_arn,
+        module.track_metadata_processing.task_role_arn,
+        module.track_metadata_processing.task_exec_role_arn,
+      ]
+      condition = [{
+        test     = "StringEquals"
+        variable = "iam:PassedToService"
+        values   = ["ecs-tasks.amazonaws.com"]
+      }]
+    },
+  ]
+
   # ── Cost profile: ~$33/month in eu-west-2, vs ~$260 for the HA topology ──────
   #
   # Every setting below trades availability or headroom for cost. To move to the
@@ -493,8 +557,6 @@ module "airflow" {
   private_subnets              = module.networking.private_subnets
   alb_target_group_arn         = module.alb.target_groups["airflow"].arn
   service_connect_namespace    = module.ecs_cluster.service_discovery_namespace_name
-  audio_processing_queue_arn   = module.audio_processing.queue_arn
-  audio_processing_dlq_arn     = module.audio_processing.dlq_arn
   task_exec_policy_arn         = module.ecs_cluster.task_exec_policy_arn
 
   # ~$78/month on-demand -> ~$23 on Spot. Single task on LocalExecutor, so a

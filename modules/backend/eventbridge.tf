@@ -11,14 +11,17 @@ resource "aws_cloudwatch_event_rule" "audio_track_events" {
   event_bus_name = var.event_bus_name
   event_pattern = jsonencode({
     source = ["ufb.audio-processing"]
+    # Completed/Failed are no longer emitted here — audio-processing now
+    # publishes those two directly to Kafka for TrackIngestionSagaWorkflow
+    # to react to, which is what writes the final result to this same
+    # webhook (see ufb-temporal-worker's activities.track_ingestion). Only
+    # the in-progress states still flow through EventBridge.
     "detail-type" = [
       "AudioTrack.Started",
       "AudioTrack.Downloading",
       "AudioTrack.Encoding",
       "AudioTrack.Packaging",
       "AudioTrack.Uploading",
-      "AudioTrack.Completed",
-      "AudioTrack.Failed"
     ]
   })
 }

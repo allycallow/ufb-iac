@@ -291,51 +291,6 @@ module "airflow_task_definition" {
       }]
     },
 
-    # Allow Airflow to run ECS tasks
-    {
-      effect = "Allow"
-      actions = [
-        "ecs:RunTask",
-        "ecs:DescribeTasks"
-      ]
-      resources = [
-        "arn:aws:ecs:eu-west-2:${data.aws_caller_identity.current.account_id}:task-definition/production-audio-processing:*",
-        "arn:aws:ecs:eu-west-2:${data.aws_caller_identity.current.account_id}:task-definition/production-ufb-tm-processing:*",
-        "arn:aws:ecs:eu-west-2:${data.aws_caller_identity.current.account_id}:task/production-ufb/*",
-      ]
-    },
-
-    # Allow passing the TASK ROLE
-    {
-      effect  = "Allow"
-      actions = ["iam:PassRole", "ecs:DescribeTasks"]
-      resources = [
-        "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/ecs-audio-processing-task-exec-role-*",
-        "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/ecs-tm-task-exec-role-*",
-        "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/production-audio-processing-tasks-*",
-        "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/production-ufb-tm-processing-tasks-*"
-      ]
-      condition = [{
-        test     = "StringEquals"
-        variable = "iam:PassedToService"
-        values   = ["ecs-tasks.amazonaws.com"]
-      }]
-    },
-
-    # Allow passing the TRACK METADATA PROCESSING TASK ROLE
-    {
-      effect  = "Allow"
-      actions = ["iam:PassRole"]
-      resources = [
-        "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/production-ufb-tm-processing-tasks-*"
-      ]
-      condition = [{
-        test     = "StringEquals"
-        variable = "iam:PassedToService"
-        values   = ["ecs-tasks.amazonaws.com"]
-      }]
-    },
-
     # DynamoDB permissions
     {
       effect = "Allow"
@@ -346,21 +301,6 @@ module "airflow_task_definition" {
       ]
       resources = [
         "arn:aws:dynamodb:eu-west-2:${data.aws_caller_identity.current.account_id}:table/production-ufb-recommendations"
-      ]
-    },
-
-    # SQS permissions
-    {
-      effect = "Allow"
-      actions = [
-        "sqs:GetMessage",
-        "sqs:DeleteMessage",
-        "sqs:ChangeMessageVisibility",
-        "sqs:ReceiveMessage"
-      ]
-      resources = [
-        var.audio_processing_queue_arn,
-        var.audio_processing_dlq_arn
       ]
     },
 

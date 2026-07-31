@@ -147,7 +147,7 @@ module "kafka_connect_task_definition" {
       from_port   = 0
       to_port     = 65535
       protocol    = "-1"
-      description = "Allow traffic anywhere (Kafka broker + OpenSearch domain, both in-VPC)"
+      description = "Allow traffic anywhere (Kafka broker + OpenSearch domain, both in-VPC; SQS is public API)"
       cidr_ipv4   = "0.0.0.0/0"
     }
   }
@@ -170,6 +170,17 @@ module "kafka_connect_task_definition" {
         "es:ESHttpHead"
       ]
       resources = ["${var.opensearch_domain_arn}/*"]
+    },
+    {
+      sid    = "AudioUploadSourceAccess"
+      effect = "Allow"
+      actions = [
+        "sqs:ReceiveMessage",
+        "sqs:DeleteMessage",
+        "sqs:GetQueueAttributes",
+        "sqs:GetQueueUrl"
+      ]
+      resources = [var.audio_upload_queue_arn]
     }
   ]
 

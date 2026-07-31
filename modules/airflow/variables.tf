@@ -38,16 +38,6 @@ variable "service_connect_namespace" {
   type        = string
 }
 
-variable "audio_processing_queue_arn" {
-  description = "ARN of the audio processing SQS queue"
-  type        = string
-}
-
-variable "audio_processing_dlq_arn" {
-  description = "ARN of the audio processing SQS dead-letter queue"
-  type        = string
-}
-
 variable "task_exec_policy_arn" {
   description = "ARN of the shared ECS task execution IAM policy"
   type        = string
