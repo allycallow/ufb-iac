@@ -440,8 +440,9 @@ module "temporal" {
   # it drives — audio-processing and track-metadata, invoked the same way
   # Airflow's EcsRunTaskOperator used to.
   worker_environment = {
-    KAFKA_BOOTSTRAP_SERVERS   = "kafka:9092"
-    KAFKA_AUDIO_UPLOADS_TOPIC = "ufb.audio_uploads"
+    KAFKA_BOOTSTRAP_SERVERS             = "kafka:9092"
+    KAFKA_AUDIO_UPLOADS_TOPIC           = "ufb.audio_uploads"
+    KAFKA_TRACK_PROCESSING_EVENTS_TOPIC = "ufb.track_processing_events"
 
     BACKEND_ENDPOINT = "https://new-admin.upfrontbeats.com"
 
