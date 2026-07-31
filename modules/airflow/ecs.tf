@@ -1,9 +1,13 @@
 module "airflow_task_definition" {
   source = "terraform-aws-modules/ecs/aws//modules/service"
 
-  name                 = var.name
-  cluster_arn          = var.ecs_cluster_arn
-  force_new_deployment = false
+  name        = var.name
+  cluster_arn = var.ecs_cluster_arn
+
+  # Required whenever capacity_provider_strategy changes: ECS cannot move tasks
+  # between capacity providers without a new deployment, and the module asserts
+  # this rather than letting the change apply silently and do nothing.
+  force_new_deployment = var.use_spot
 
   runtime_platform = {
     cpu_architecture        = "ARM64"
@@ -12,6 +16,39 @@ module "airflow_task_definition" {
 
   cpu    = 2048
   memory = 8192
+
+  # ── Fargate Spot ────────────────────────────────────────────────────────────
+  #
+  # At 2 vCPU / 8 GB ARM64 this is the most expensive service in the cluster:
+  # ~$78/month on-demand, ~$23 on Spot.
+  #
+  # Both providers are listed rather than Spot alone. With a single task the
+  # 99:1 weighting sends effectively every placement to Spot, but keeping
+  # FARGATE in the strategy leaves a fallback when an ARM64 Spot pool is
+  # exhausted — Spot-only would simply fail to place and leave Airflow down.
+  #
+  # Note this service previously ran on-demand by accident, not by choice: the
+  # shared service module defaults `launch_type = "FARGATE"`, and an explicit
+  # launch_type makes ECS ignore the cluster's default capacity provider
+  # strategy entirely.
+  capacity_provider_strategy = var.use_spot ? {
+    spot = {
+      capacity_provider = "FARGATE_SPOT"
+      weight            = 99
+      base              = 0
+    }
+    on_demand = {
+      capacity_provider = "FARGATE"
+      weight            = 1
+      base              = 0
+    }
+    } : {
+    on_demand = {
+      capacity_provider = "FARGATE"
+      weight            = 1
+      base              = 0
+    }
+  }
 
   container_definitions = {
     airflow = {

@@ -5,6 +5,15 @@ module "frontend_task_definition" {
   cluster_arn          = var.ecs_cluster_arn
   force_new_deployment = true
 
+  # See the note in modules/backend/ecs.tf. CircleCI owns the image tag; this
+  # stops Terraform reverting the service to `:latest`. Toggling it requires a
+  # `terraform state mv` or the service is destroyed and recreated.
+  ignore_task_definition_changes = true
+
+  # See modules/backend/ecs.tf: prevents Terraform deregistering the revision the
+  # service is actually running.
+  skip_destroy = true
+
   cpu    = 1024
   memory = 2048
 

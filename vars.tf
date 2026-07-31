@@ -52,5 +52,5 @@ variable "acme_email" {
 variable "apple_private_key" {
   type        = string
   description = "Contents of Apple private key (.p8) file"
-  default     = "=-----BEGIN PRIVATE KEY-----\nMIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQgzb2UPrW7HuYc2CSu\nHXFBP1c3GPSYN+N8jBGzFz5k4oagCgYIKoZIzj0DAQehRANCAAQZNVmm6v39ic1E\nMN3Km8Qnxu2RRRbMnqv14h53fgmnj+Vmr+eKzeZubUb/WQLm7D+Fpz7hr+iyWIra\ns16Hnrxp\n-----END PRIVATE KEY-----"
+  default     = "-----BEGIN PRIVATE KEY-----\nMIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQgzb2UPrW7HuYc2CSu\nHXFBP1c3GPSYN+N8jBGzFz5k4oagCgYIKoZIzj0DAQehRANCAAQZNVmm6v39ic1E\nMN3Km8Qnxu2RRRbMnqv14h53fgmnj+Vmr+eKzeZubUb/WQLm7D+Fpz7hr+iyWIra\ns16Hnrxp\n-----END PRIVATE KEY-----"
 }

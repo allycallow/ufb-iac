@@ -10,6 +10,16 @@ output "db_instance_resource_id" {
   value = module.db.db_instance_resource_id
 }
 
+output "db_instance_host" {
+  description = "Endpoint with the :port suffix stripped, for consumers that need a bare hostname."
+  value       = split(":", module.db.db_instance_endpoint)[0]
+}
+
+output "db_instance_master_user_secret_arn" {
+  description = "RDS-managed master credentials secret (manage_master_user_password defaults to true)."
+  value       = module.db.db_instance_master_user_secret_arn
+}
+
 output "redis_host" {
   value = aws_elasticache_replication_group.redis.primary_endpoint_address
 }

@@ -57,7 +57,8 @@ module "container_registry" {
     "search",
     "track-metadata",
     "recommendations",
-    "kafka-connect"
+    "kafka-connect",
+    "temporal-worker"
   ]
 }
 
@@ -386,6 +387,94 @@ module "backend" {
   task_exec_policy_arn         = module.ecs_cluster.task_exec_policy_arn
 }
 
+module "temporal" {
+  source = "./modules/temporal"
+
+  name       = "${local.name}-temporal"
+  region     = local.region
+  account_id = data.aws_caller_identity.current.account_id
+
+  tags = {
+    Environment = terraform.workspace
+    Name        = local.name
+    Workflow    = "temporal"
+  }
+
+  # Reuses the shared VPC, ECS cluster, Cloud Map namespace and ECR registry.
+  vpc_id          = module.networking.vpc_id
+  vpc_cidr_block  = module.networking.vpc_cidr_block
+  private_subnets = module.networking.private_subnets
+
+  ecs_cluster_arn                  = module.ecs_cluster.cluster_arn
+  task_exec_policy_arn             = module.ecs_cluster.task_exec_policy_arn
+  service_discovery_namespace_id   = module.ecs_cluster.service_discovery_namespace_id
+  service_discovery_namespace_name = module.ecs_cluster.service_discovery_namespace_name
+
+  worker_image_uri = "${module.container_registry.repository_urls["temporal-worker"]}:latest"
+
+  # Persistence lives on the existing RDS PostgreSQL instance, in its own
+  # `temporal` and `temporal_visibility` databases created by the schema task.
+  db_host       = module.database.db_instance_host
+  db_secret_arn = module.database.db_instance_master_user_secret_arn
+
+  # Services allowed to start workflows against the frontend on 7233.
+  client_security_group_ids = [
+    module.backend.security_group_id,
+    module.airflow.security_group_id,
+    module.teleport.security_group_id,
+  ]
+
+  # Who may reach the Web UI.
+  ui_client_security_group_ids = [
+    module.teleport.security_group_id,
+    module.monitoring.security_group_id,
+  ]
+
+  # ── Cost profile: ~$33/month in eu-west-2, vs ~$260 for the HA topology ──────
+  #
+  # Every setting below trades availability or headroom for cost. To move to the
+  # production topology, delete this block: the module defaults are the HA ones,
+  # and switching back needs no database change.
+
+  # All four roles in one task instead of one service each — the single biggest
+  # saving (~$170/mo). Deploys still roll (ECS starts the replacement before
+  # draining the old task), but an unplanned task loss means Temporal is
+  # unavailable for the minute or two ECS takes to replace it. Workflow state
+  # lives in RDS, so nothing is lost — execution pauses and resumes.
+  deployment_mode    = "single-node"
+  single_node_cpu    = 512
+  single_node_memory = 1024
+
+  # 128 rather than 512 shards. IMMUTABLE — changing it later requires a fresh
+  # database and loses all workflow history. 128 keeps idle CPU and idle RDS
+  # write load low while leaving room to grow into real production volume.
+  temporal_num_history_shards = 128
+
+  # No internal ALB (~$19/mo). The UI is still deployed and registered in Cloud
+  # Map as temporal-ui.production-ufb.internal:8080 — reach it through the
+  # existing Teleport application access.
+  create_ui_alb    = false
+  ui_desired_count = 1
+
+  # One worker, effectively all on Spot. Interruption is safe: the worker stops
+  # polling and Temporal redelivers its tasks.
+  #
+  # The weights must be set alongside base = 0. The module defaults are 4:1
+  # spot:on-demand, which with base = 0 puts 1 task in 5 on on-demand — and with
+  # a single task that means a ~20% chance of paying full price for it. 99:1
+  # keeps on-demand available purely as a fallback when a Spot pool is exhausted.
+  worker_desired_count    = 1
+  worker_min_capacity     = 1
+  worker_max_capacity     = 4
+  worker_on_demand_base   = 0
+  worker_spot_weight      = 99
+  worker_on_demand_weight = 1
+
+  # Trim log spend.
+  temporal_log_level = "warn"
+  log_retention_days = 7
+}
+
 module "airflow" {
   source = "./modules/airflow"
 
@@ -407,4 +496,8 @@ module "airflow" {
   audio_processing_queue_arn   = module.audio_processing.queue_arn
   audio_processing_dlq_arn     = module.audio_processing.dlq_arn
   task_exec_policy_arn         = module.ecs_cluster.task_exec_policy_arn
+
+  # ~$78/month on-demand -> ~$23 on Spot. Single task on LocalExecutor, so a
+  # reclaim interrupts in-flight DAG tasks and drops the UI for 1-2 minutes.
+  use_spot = true
 }

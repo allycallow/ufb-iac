@@ -4,6 +4,16 @@ module "recommendations_task_definition" {
   name        = var.name
   cluster_arn = var.ecs_cluster_arn
 
+  # See the note in modules/search/ecs.tf. CircleCI owns the deployed task
+  # definition; this stops Terraform pushing the service onto a different
+  # revision. Toggling it requires a `terraform state mv` or the service is
+  # destroyed and recreated.
+  ignore_task_definition_changes = true
+
+  # See modules/search/ecs.tf: prevents Terraform deregistering the revision the
+  # service is actually running.
+  skip_destroy = true
+
   runtime_platform = {
     cpu_architecture        = "ARM64"
     operating_system_family = "LINUX"

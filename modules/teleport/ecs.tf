@@ -68,6 +68,11 @@ locals {
         uri: http://recommendations:8000
       - name: recommendations-grpc
         uri: tcp://recommendations:50051
+      # FQDN, unlike the entries above: Temporal is not a Service Connect member
+      # (its ringpop membership needs each server task's real IP), so the short
+      # name does not resolve. The Cloud Map private zone resolves this VPC-wide.
+      - name: temporal
+        uri: http://temporal-ui.${var.service_connect_namespace}:8080
   EOF
 }
 

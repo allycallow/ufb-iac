@@ -4,6 +4,29 @@ module "search_task_definition" {
   name        = var.name
   cluster_arn = var.ecs_cluster_arn
 
+  # CircleCI owns the deployed task definition: it registers a new revision and
+  # calls ecs update_service. Terraform's aws_ecs_task_definition tracks the
+  # latest revision, so an apply pushes the service onto whichever revision
+  # CircleCI registered last — a deployment Terraform has no business making.
+  #
+  # Unlike backend/frontend, the image tag here is `:latest` on both sides, so
+  # the symptom is a revision change rather than an image rollback. The cause
+  # and the fix are the same: keep Terraform out of the service's task
+  # definition.
+  #
+  # NOTE: toggling this moves the service between two resource addresses inside
+  # the upstream module (aws_ecs_service.this -> .ignore_task_definition), so it
+  # requires a `terraform state mv`. Flipping it without that DESTROYS AND
+  # RECREATES the service.
+  ignore_task_definition_changes = true
+
+  # Never deregister a task definition revision. The module defaults
+  # track_latest = true, so a refresh snaps this resource onto a CircleCI-created
+  # revision. Replacing it would then deregister that revision, and while
+  # already-running tasks survive, ECS cannot start new ones from a deregistered
+  # revision: task replacement and autoscaling would silently stop working.
+  skip_destroy = true
+
   runtime_platform = {
     cpu_architecture        = "ARM64"
     operating_system_family = "LINUX"

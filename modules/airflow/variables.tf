@@ -53,6 +53,26 @@ variable "task_exec_policy_arn" {
   type        = string
 }
 
+variable "use_spot" {
+  description = <<-EOT
+    Run Airflow predominantly on Fargate Spot, saving roughly $55/month.
+
+    This service runs a single task with LocalExecutor, so the scheduler,
+    webserver and DAG task execution all share one container. A Spot reclaim
+    therefore:
+
+      * interrupts any DAG task instance running at that moment — Airflow's
+        zombie detection reaps it and retries only if the task defines retries;
+      * takes airflow.upfrontbeats.com down for the 1-2 minutes ECS needs to
+        place a replacement.
+
+    Safe when your DAG tasks are idempotent and have retries configured. Set
+    false to go back to on-demand.
+  EOT
+  type        = bool
+  default     = true
+}
+
 variable "tags" {
   description = "Tags to apply to all resources"
   type        = map(string)
