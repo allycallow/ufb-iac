@@ -1,5 +1,6 @@
 .terraform
 .DS_Store
+modules/kafka-connect/connector-config/debezium-postgres-outbox-source.json
 __pycache__/
 *.py[cod]
 .venv/

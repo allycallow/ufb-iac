@@ -65,9 +65,32 @@ resource "aws_db_parameter_group" "default" {
   name_prefix = "${var.name}-pg18-"
   family      = "postgres18"
 
+  parameter {
+    name         = "rds.logical_replication"
+    value        = "1"
+    apply_method = "pending-reboot"
+  }
+
   lifecycle {
     create_before_destroy = true
   }
+}
+
+resource "random_password" "debezium" {
+  length  = 32
+  special = false
+}
+
+resource "aws_secretsmanager_secret" "debezium" {
+  name = "${var.name}/debezium-outbox-cdc"
+}
+
+resource "aws_secretsmanager_secret_version" "debezium" {
+  secret_id = aws_secretsmanager_secret.debezium.id
+  secret_string = jsonencode({
+    username = "debezium"
+    password = random_password.debezium.result
+  })
 }
 
 module "db" {

@@ -20,6 +20,11 @@ output "db_instance_master_user_secret_arn" {
   value       = module.db.db_instance_master_user_secret_arn
 }
 
+output "debezium_secret_arn" {
+  description = "Secrets Manager secret holding the debezium replication user's credentials, for Kafka Connect's outbox CDC connector. The role itself must be created manually against Postgres (see plan) using this generated password."
+  value       = aws_secretsmanager_secret.debezium.arn
+}
+
 output "redis_host" {
   value = aws_elasticache_replication_group.redis.primary_endpoint_address
 }

@@ -14,6 +14,14 @@ terraform {
       source  = "hashicorp/aws"
       version = ">= 6.21.0"
     }
+    random = {
+      source  = "hashicorp/random"
+      version = ">= 3.6.0"
+    }
+    local = {
+      source  = "hashicorp/local"
+      version = ">= 2.5.0"
+    }
   }
 }
 
@@ -223,6 +231,9 @@ module "kafka_connect" {
   image_uri                 = "${module.container_registry.repository_urls["kafka-connect"]}:latest"
   opensearch_domain_arn     = module.search.opensearch_domain_arn
   audio_upload_queue_arn    = module.audio_processing.queue_arn
+  debezium_secret_arn       = module.database.debezium_secret_arn
+  db_host                   = module.database.db_instance_host
+  db_name                   = "ufb"
 }
 
 module "teleport" {

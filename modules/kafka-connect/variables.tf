@@ -38,6 +38,21 @@ variable "audio_upload_queue_arn" {
   type        = string
 }
 
+variable "debezium_secret_arn" {
+  description = "ARN of the Secrets Manager secret holding the debezium replication user's credentials, referenced by the outbox source connector config via the secretsmanager config provider"
+  type        = string
+}
+
+variable "db_host" {
+  description = "Bare hostname (no port) of the ufb Postgres instance, for the Debezium outbox source connector config"
+  type        = string
+}
+
+variable "db_name" {
+  description = "Database name the Debezium outbox source connector connects to"
+  type        = string
+}
+
 variable "cpu" {
   type    = number
   default = 512

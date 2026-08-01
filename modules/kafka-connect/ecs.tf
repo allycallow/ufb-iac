@@ -18,7 +18,19 @@ locals {
 
     rest.port=8083
     plugin.path=/opt/kafka/connect-plugins
+
+    config.providers=secretsmanager
+    config.providers.secretsmanager.class=com.amazonaws.kafka.config.providers.SecretsManagerConfigProvider
   EOF
+}
+
+resource "local_file" "debezium_postgres_outbox_source_config" {
+  filename = "${path.module}/connector-config/debezium-postgres-outbox-source.json"
+  content = templatefile("${path.module}/connector-config/debezium-postgres-outbox-source.json.tpl", {
+    db_host             = var.db_host
+    db_name             = var.db_name
+    debezium_secret_arn = var.debezium_secret_arn
+  })
 }
 
 module "kafka_connect_task_definition" {
@@ -181,6 +193,14 @@ module "kafka_connect_task_definition" {
         "sqs:GetQueueUrl"
       ]
       resources = [var.audio_upload_queue_arn]
+    },
+    {
+      sid    = "DebeziumSecretAccess"
+      effect = "Allow"
+      actions = [
+        "secretsmanager:GetSecretValue"
+      ]
+      resources = [var.debezium_secret_arn]
     }
   ]
 
