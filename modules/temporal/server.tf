@@ -84,6 +84,12 @@ resource "aws_ecs_task_definition" "server" {
           hostPort      = each.value.membership_port
           protocol      = "tcp"
         },
+        {
+          name          = "metrics"
+          containerPort = var.metrics_port
+          hostPort      = var.metrics_port
+          protocol      = "tcp"
+        },
       ])
 
       # The image renders its config template into /etc/temporal at start, so the

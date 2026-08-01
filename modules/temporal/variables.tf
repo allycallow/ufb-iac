@@ -577,3 +577,15 @@ variable "enable_execute_command" {
   type        = bool
   default     = true
 }
+
+variable "metrics_port" {
+  description = "Container port the Temporal server's built-in Prometheus endpoint (PROMETHEUS_ENDPOINT) listens on."
+  type        = number
+  default     = 9090
+}
+
+variable "metrics_client_security_group_ids" {
+  description = "Security groups (e.g. the monitoring service) allowed to scrape the Temporal server's Prometheus endpoint."
+  type        = list(string)
+  default     = []
+}

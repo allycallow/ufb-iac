@@ -47,6 +47,18 @@ module "monitoring_service" {
             metrics_path: /metrics
             static_configs:
               - targets: ['airflow-statsd:9102']
+        %{if var.kafka_admin_target != null}
+          - job_name: kafka
+            metrics_path: /public_metrics
+            static_configs:
+              - targets: ${jsonencode([var.kafka_admin_target])}
+        %{endif}
+        %{if length(var.temporal_metrics_targets) > 0}
+          - job_name: temporal
+            metrics_path: /metrics
+            static_configs:
+              - targets: ${jsonencode(var.temporal_metrics_targets)}
+        %{endif}
         EOF
 
         exec /bin/prometheus \

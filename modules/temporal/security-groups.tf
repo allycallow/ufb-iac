@@ -84,6 +84,17 @@ resource "aws_vpc_security_group_ingress_rule" "server_frontend_from_clients" {
   description                  = "Temporal client traffic from an in-cluster service"
 }
 
+resource "aws_vpc_security_group_ingress_rule" "server_metrics_from_clients" {
+  for_each = { for idx, sg in var.metrics_client_security_group_ids : tostring(idx) => sg }
+
+  security_group_id            = aws_security_group.server.id
+  referenced_security_group_id = each.value
+  ip_protocol                  = "tcp"
+  from_port                    = var.metrics_port
+  to_port                      = var.metrics_port
+  description                  = "Prometheus scrape of the Temporal server metrics endpoint"
+}
+
 resource "aws_vpc_security_group_egress_rule" "server_all" {
   security_group_id = aws_security_group.server.id
   ip_protocol       = "-1"

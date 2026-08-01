@@ -100,20 +100,40 @@ module "kafka_task_definition" {
           dns_name = "kafka"
           port     = 9092
         }
+      },
+      {
+        port_name      = "kafka-admin"
+        discovery_name = "kafka-admin-sc"
+        client_alias = {
+          dns_name = "kafka"
+          port     = 9644
+        }
       }
     ]
   }
 
-  security_group_ingress_rules = {
-    for idx, sg_id in var.client_security_group_ids : "client_${idx}_kafka" => {
-      type                         = "ingress"
-      from_port                    = 9092
-      to_port                      = 9092
-      protocol                     = "tcp"
-      description                  = "Allow Kafka traffic from client service"
-      referenced_security_group_id = sg_id
+  security_group_ingress_rules = merge(
+    {
+      for idx, sg_id in var.client_security_group_ids : "client_${idx}_kafka" => {
+        type                         = "ingress"
+        from_port                    = 9092
+        to_port                      = 9092
+        protocol                     = "tcp"
+        description                  = "Allow Kafka traffic from client service"
+        referenced_security_group_id = sg_id
+      }
+    },
+    {
+      for idx, sg_id in var.metrics_client_security_group_ids : "client_${idx}_kafka_admin" => {
+        type                         = "ingress"
+        from_port                    = 9644
+        to_port                      = 9644
+        protocol                     = "tcp"
+        description                  = "Allow Prometheus to scrape Redpanda admin metrics"
+        referenced_security_group_id = sg_id
+      }
     }
-  }
+  )
 
   security_group_egress_rules = {
     all = {

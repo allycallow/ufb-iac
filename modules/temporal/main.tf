@@ -52,6 +52,14 @@ locals {
         protocol      = "tcp"
       }
     ],
+    [
+      {
+        name          = "metrics"
+        containerPort = var.metrics_port
+        hostPort      = var.metrics_port
+        protocol      = "tcp"
+      }
+    ],
   ) : null
 
   db_user_secret     = "${var.db_secret_arn}:username::"
@@ -106,6 +114,11 @@ locals {
       # and the server refuses to start without it. Pinned here so the entrypoint
       # wrapper below can create it deterministically.
       DYNAMIC_CONFIG_FILE_PATH = local.dynamic_config_path
+
+      # Enables the server's built-in Prometheus metrics endpoint at /metrics.
+      # Recognised directly by the image's config template — no config file
+      # changes needed.
+      PROMETHEUS_ENDPOINT = "0.0.0.0:${var.metrics_port}"
     },
   )
 

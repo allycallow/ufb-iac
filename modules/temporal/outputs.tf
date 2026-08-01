@@ -116,6 +116,19 @@ output "server_service_names" {
   value = { for k, s in aws_ecs_service.server : k => s.name }
 }
 
+output "metrics_targets" {
+  description = <<-EOT
+    host:port Prometheus scrape targets for the Temporal server's built-in
+    metrics endpoint — one per role (four in multi-role mode, one in
+    single-node). These are plain Cloud Map A records, not Service Connect, so
+    any task in the VPC can resolve them without joining the mesh.
+  EOT
+  value = [
+    for key, role in local.roles :
+    "${local.role_dns_name[key]}.${var.service_discovery_namespace_name}:${var.metrics_port}"
+  ]
+}
+
 output "worker_service_name" {
   value = module.worker.name
 }

@@ -44,3 +44,15 @@ variable "vpc_id" {
   description = "VPC ID used for the EFS security group"
   type        = string
 }
+
+variable "kafka_admin_target" {
+  description = "host:port for Redpanda's Prometheus metrics (its admin API, e.g. \"kafka:9644\"). Null skips the scrape job."
+  type        = string
+  default     = null
+}
+
+variable "temporal_metrics_targets" {
+  description = "host:port list for the Temporal server's built-in Prometheus endpoint, one per role. Empty list skips the scrape job."
+  type        = list(string)
+  default     = []
+}

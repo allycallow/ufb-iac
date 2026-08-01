@@ -29,6 +29,12 @@ variable "client_security_group_ids" {
   default     = []
 }
 
+variable "metrics_client_security_group_ids" {
+  description = "Security group IDs (e.g. the monitoring service) allowed to scrape Redpanda's Prometheus metrics on the admin port (9644)"
+  type        = list(string)
+  default     = []
+}
+
 variable "cpu" {
   type    = number
   default = 512

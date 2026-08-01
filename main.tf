@@ -198,6 +198,10 @@ module "kafka" {
     module.audio_processing.security_group_id,
     module.track_metadata_processing.security_group_id,
   ]
+
+  metrics_client_security_group_ids = [
+    module.monitoring.security_group_id,
+  ]
 }
 
 module "kafka_connect" {
@@ -337,6 +341,20 @@ module "monitoring" {
   vpc_cidr_block            = module.networking.vpc_cidr_block
   vpc_id                    = module.networking.vpc_id
   service_connect_namespace = module.ecs_cluster.service_discovery_namespace_name
+
+  # Redpanda's admin API, aliased over Service Connect (modules/kafka/ecs.tf).
+  kafka_admin_target = "kafka:9644"
+
+  # The Temporal server's Cloud Map A record (not Service Connect — see
+  # modules/temporal/main.tf). Hardcoded rather than wired through
+  # module.temporal's output to avoid a module dependency cycle: module.temporal
+  # already depends on module.monitoring.security_group_id above. One entry per
+  # role in multi-role mode ("temporal-frontend", "temporal-history",
+  # "temporal-matching", "temporal-internal-worker") — update this list if
+  # module.temporal's deployment_mode ever changes from single-node.
+  temporal_metrics_targets = [
+    "temporal-frontend.${module.ecs_cluster.service_discovery_namespace_name}:9090",
+  ]
 }
 
 module "frontend" {
@@ -433,6 +451,11 @@ module "temporal" {
   # Who may reach the Web UI.
   ui_client_security_group_ids = [
     module.teleport.security_group_id,
+    module.monitoring.security_group_id,
+  ]
+
+  # Let Prometheus scrape the server's built-in metrics endpoint.
+  metrics_client_security_group_ids = [
     module.monitoring.security_group_id,
   ]
 
