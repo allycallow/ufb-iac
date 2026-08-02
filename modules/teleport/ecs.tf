@@ -41,6 +41,18 @@ locals {
           region: ${var.region}
           rds:
             instance_id: ${var.db_instance_identifier}
+        static_labels:
+          access-tier: standard
+      # TODO: a `rds-postgres-root` entry for static-password (non-IAM) auth as
+      # the RDS master user was tried here and reverted. Teleport's cloud
+      # metadata fetcher auto-detects any `*.rds.amazonaws.com` URI and forces
+      # IAM auth regardless of whether an `aws:` block is present in this
+      # config, so omitting `aws:` doesn't get you plain password auth against
+      # a real RDS endpoint. To make that work, the URI given to db_service
+      # needs to not resolve to an obviously-RDS hostname — e.g. a TCP relay
+      # sidecar (socat) in this task proxying localhost:5433 to the real
+      # endpoint, or a Cloud Map/private-DNS CNAME alias — so Teleport treats
+      # it as a self-hosted database and skips IAM token generation.
       - name: elasticache-redis
         protocol: redis
         uri: "${var.redis_endpoint}"
@@ -48,12 +60,16 @@ locals {
           region: ${var.region}
           elasticache:
             replication_group_id: ${var.redis_replication_group_id}
+        static_labels:
+          access-tier: standard
       - name: opensearch
         protocol: opensearch
         uri: "${var.opensearch_domain_endpoint}:443"
         aws:
           region: ${var.region}
           account_id: ${var.account_id}
+        static_labels:
+          access-tier: standard
 
     ssh_service:
       enabled: false
@@ -68,6 +84,8 @@ locals {
         uri: http://recommendations:8000
       - name: recommendations-grpc
         uri: tcp://recommendations:50051
+      - name: kafka-connect
+        uri: http://kafka-connect:8083
       # FQDN, unlike the entries above: Temporal is not a Service Connect member
       # (its ringpop membership needs each server task's real IP), so the short
       # name does not resolve. The Cloud Map private zone resolves this VPC-wide.

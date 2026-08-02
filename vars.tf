@@ -49,6 +49,12 @@ variable "acme_email" {
   default     = "alex@upfrontbeats.com"
 }
 
+variable "cognito_certificate_arn" {
+  description = "us-east-1 ACM certificate covering *.upfrontbeats.com, used for Cognito's custom Hosted UI domain"
+  type        = string
+  default     = "arn:aws:acm:us-east-1:081077757258:certificate/e5eb1087-ba5d-4b03-8dd9-40a321e39f48"
+}
+
 variable "apple_private_key" {
   type        = string
   description = "Contents of Apple private key (.p8) file"

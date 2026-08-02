@@ -101,50 +101,6 @@ module "alb" {
       create_attachment = false
     }
 
-    search = {
-      backend_protocol                  = "HTTP"
-      backend_port                      = 8080
-      target_type                       = "ip"
-      deregistration_delay              = 5
-      load_balancing_cross_zone_enabled = true
-
-      health_check = {
-        enabled             = true
-        healthy_threshold   = 3
-        interval            = 15
-        matcher             = "200-399"
-        path                = "/"
-        port                = "traffic-port"
-        protocol            = "HTTP"
-        timeout             = 5
-        unhealthy_threshold = 2
-      }
-
-      create_attachment = false
-    }
-
-    recommendations = {
-      backend_protocol                  = "HTTP"
-      backend_port                      = 8080
-      target_type                       = "ip"
-      deregistration_delay              = 5
-      load_balancing_cross_zone_enabled = true
-
-      health_check = {
-        enabled             = true
-        healthy_threshold   = 3
-        interval            = 15
-        matcher             = "200-399"
-        path                = "/"
-        port                = "traffic-port"
-        protocol            = "HTTP"
-        timeout             = 5
-        unhealthy_threshold = 2
-      }
-
-      create_attachment = false
-    }
-
     monitoring = {
       backend_protocol                  = "HTTP"
       backend_port                      = 3000
@@ -225,36 +181,6 @@ module "alb" {
           actions = [{
             type             = "forward"
             target_group_key = "airflow"
-          }]
-        }
-
-        search_disabled = {
-          priority = 4
-          conditions = [{
-            host_header = {
-              values = ["search.upfrontbeats.com"]
-            }
-          }]
-          actions = [{
-            type         = "fixed-response"
-            content_type = "text/plain"
-            message_body = "Not Found"
-            status_code  = "404"
-          }]
-        }
-
-        recommendations_disabled = {
-          priority = 5
-          conditions = [{
-            host_header = {
-              values = ["recommendations.upfrontbeats.com"]
-            }
-          }]
-          actions = [{
-            type         = "fixed-response"
-            content_type = "text/plain"
-            message_body = "Not Found"
-            status_code  = "404"
           }]
         }
 

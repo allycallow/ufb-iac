@@ -107,14 +107,6 @@ module "search_task_definition" {
   subnet_ids               = var.private_subnets
   autoscaling_max_capacity = 2
 
-  load_balancer = {
-    service = {
-      target_group_arn = var.alb_target_group_arn
-      container_name   = "search"
-      container_port   = 8000
-    }
-  }
-
   service_connect_configuration = {
     enabled   = true
     namespace = var.service_connect_namespace
@@ -139,15 +131,6 @@ module "search_task_definition" {
   }
 
   security_group_ingress_rules = {
-    alb_ingress_8000 = {
-      type                         = "ingress"
-      from_port                    = 8000
-      to_port                      = 8000
-      protocol                     = "tcp"
-      description                  = "Allow traffic from ALB"
-      referenced_security_group_id = var.alb_security_group_id
-    }
-
     backend_ingress_8000 = {
       type                         = "ingress"
       from_port                    = 8000

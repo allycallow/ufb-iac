@@ -170,11 +170,9 @@ module "search" {
 
   ecs_cluster_arn           = module.ecs_cluster.cluster_arn
   image_uri                 = "${module.container_registry.repository_urls["search"]}:latest"
-  alb_security_group_id     = module.alb.security_group_id
   backend_security_group_id = module.backend.security_group_id
   service_connect_namespace = module.ecs_cluster.service_discovery_namespace_name
   private_subnets           = module.networking.private_subnets
-  alb_target_group_arn      = module.alb.target_groups["search"].arn
   vpc_id                    = module.networking.vpc_id
   vpc_cidr_block            = module.networking.vpc_cidr_block
 
@@ -223,17 +221,18 @@ module "kafka_connect" {
     Workflow    = "kafka-connect"
   }
 
-  vpc_id                    = module.networking.vpc_id
-  private_subnets           = module.networking.private_subnets
-  ecs_cluster_arn           = module.ecs_cluster.cluster_arn
-  service_connect_namespace = module.ecs_cluster.service_discovery_namespace_name
-  task_exec_policy_arn      = module.ecs_cluster.task_exec_policy_arn
-  image_uri                 = "${module.container_registry.repository_urls["kafka-connect"]}:latest"
-  opensearch_domain_arn     = module.search.opensearch_domain_arn
-  audio_upload_queue_arn    = module.audio_processing.queue_arn
-  debezium_secret_arn       = module.database.debezium_secret_arn
-  db_host                   = module.database.db_instance_host
-  db_name                   = "ufb"
+  vpc_id                     = module.networking.vpc_id
+  private_subnets            = module.networking.private_subnets
+  ecs_cluster_arn            = module.ecs_cluster.cluster_arn
+  service_connect_namespace  = module.ecs_cluster.service_discovery_namespace_name
+  task_exec_policy_arn       = module.ecs_cluster.task_exec_policy_arn
+  image_uri                  = "${module.container_registry.repository_urls["kafka-connect"]}:latest"
+  opensearch_domain_arn      = module.search.opensearch_domain_arn
+  audio_upload_queue_arn     = module.audio_processing.queue_arn
+  debezium_secret_arn        = module.database.debezium_secret_arn
+  db_host                    = module.database.db_instance_host
+  db_name                    = "ufb"
+  teleport_security_group_id = module.teleport.security_group_id
 }
 
 module "teleport" {
@@ -303,11 +302,9 @@ module "recommendations" {
 
   ecs_cluster_arn           = module.ecs_cluster.cluster_arn
   image_uri                 = "${module.container_registry.repository_urls["recommendations"]}:latest"
-  alb_security_group_id     = module.alb.security_group_id
   backend_security_group_id = module.backend.security_group_id
   service_connect_namespace = module.ecs_cluster.service_discovery_namespace_name
   private_subnets           = module.networking.private_subnets
-  alb_target_group_arn      = module.alb.target_groups["recommendations"].arn
 
   teleport_security_group_id   = module.teleport.security_group_id
   monitoring_security_group_id = module.monitoring.security_group_id

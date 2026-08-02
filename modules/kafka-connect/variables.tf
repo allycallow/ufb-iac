@@ -53,6 +53,11 @@ variable "db_name" {
   type        = string
 }
 
+variable "teleport_security_group_id" {
+  description = "Security group of the Teleport app-access task, allowed to reach the Connect REST API to manage connectors"
+  type        = string
+}
+
 variable "cpu" {
   type    = number
   default = 512

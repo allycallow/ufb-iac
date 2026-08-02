@@ -151,7 +151,16 @@ module "kafka_connect_task_definition" {
     ]
   }
 
-  security_group_ingress_rules = {}
+  security_group_ingress_rules = {
+    teleport_ingress_8083 = {
+      type                         = "ingress"
+      from_port                    = 8083
+      to_port                      = 8083
+      protocol                     = "tcp"
+      description                  = "Allow Connect REST API access from Teleport"
+      referenced_security_group_id = var.teleport_security_group_id
+    }
+  }
 
   security_group_egress_rules = {
     all = {

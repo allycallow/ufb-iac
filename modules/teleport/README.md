@@ -66,6 +66,28 @@ this has to be run from something already in the VPC — e.g. a one-off Fargate 
 using the backend service's task-exec role, pulling the master credentials from the
 same Secrets Manager secret the backend app uses.
 
+## Postgres, as root — not currently possible via Teleport
+
+We tried adding a second `rds-postgres-root` entry with no `aws:` block, on the
+theory that Teleport would treat it as a plain self-hosted Postgres and just tunnel
+the wire protocol through, leaving RDS to do its own password authentication for
+`root`. That doesn't work: Teleport's cloud metadata fetcher auto-detects any
+`*.rds.amazonaws.com` URI and forces IAM auth regardless of whether `aws:` is
+present in the config — the `aws:` block only overrides/supplements auto-detected
+fields, it doesn't opt out of IAM. So `--db-user=root` against a real RDS endpoint
+still tries to mint an IAM auth token, which fails (the task role's `rds-db:connect`
+permission is scoped to `teleport_svc` only, and `root` isn't `rds_iam`-granted
+anyway).
+
+To actually get password auth working, Teleport needs to not recognize the URI as
+RDS in the first place — e.g. a TCP relay sidecar (`socat`) in the Teleport task
+proxying `localhost:5433` to the real endpoint, or a private DNS/Cloud Map CNAME
+alias, so the configured `uri:` doesn't match the RDS hostname pattern. Not built
+yet — revisit if root access becomes a real need.
+
+For master-user access today, use the manual-Fargate-task approach described above
+(same one used for the one-time `teleport_svc` role setup).
+
 ## Apps (`search`, `recommendations`)
 
 The Teleport task joins the cluster's ECS Service Connect namespace so it can reach
