@@ -31,7 +31,7 @@ module "track_metadata_processing_task_definition" {
       environment = [
         {
           name  = "KAFKA_BOOTSTRAP_SERVERS"
-          value = "kafka:9092"
+          value = var.kafka_bootstrap_servers
         },
         {
           name  = "KAFKA_TRACK_PROCESSING_EVENTS_TOPIC"
@@ -51,15 +51,6 @@ module "track_metadata_processing_task_definition" {
   }
 
   subnet_ids = var.private_subnets
-
-  # Client-only Service Connect: no `service` block, so this publishes
-  # nothing of its own. It only needs this to resolve Kafka (`kafka:9092`)
-  # by short name through the sidecar proxy, to publish its saga result —
-  # same reason modules/temporal's worker enables it.
-  service_connect_configuration = {
-    enabled   = true
-    namespace = var.service_connect_namespace
-  }
 
   security_group_egress_rules = {
     all = {

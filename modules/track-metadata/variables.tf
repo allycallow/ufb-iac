@@ -34,7 +34,7 @@ variable "private_subnets" {
   type        = list(string)
 }
 
-variable "service_connect_namespace" {
-  description = "Cloud Map namespace name used by ECS Service Connect, for client-only access to Kafka"
+variable "kafka_bootstrap_servers" {
+  description = "Kafka broker address reachable over normal VPC DNS (this task runs standalone via RunTask, so it gets no Service Connect proxy and can't use the `kafka` short name)"
   type        = string
 }

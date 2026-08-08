@@ -47,15 +47,21 @@ module "kafka_task_definition" {
       user                   = "0"
       readonlyRootFilesystem = false
 
+      # Advertised addresses use the Cloud Map FQDN, not the Service Connect
+      # `kafka` short name: this is what the broker hands back to every
+      # client (Service Connect-proxied or not) in Kafka protocol metadata
+      # responses for the follow-up per-partition connection, and only the
+      # FQDN resolves through plain VPC DNS for RunTask-launched clients like
+      # audio-processing/track-metadata. Bootstrap can still use either form.
       command = [
         "redpanda", "start",
         "--mode", "dev-container",
         "--smp", "1",
         "--memory", "${var.memory - 128}M",
         "--kafka-addr", "internal://0.0.0.0:9092",
-        "--advertise-kafka-addr", "internal://kafka:9092",
+        "--advertise-kafka-addr", "internal://kafka.${var.service_connect_namespace}:9092",
         "--rpc-addr", "0.0.0.0:33145",
-        "--advertise-rpc-addr", "kafka:33145"
+        "--advertise-rpc-addr", "kafka.${var.service_connect_namespace}:33145"
       ]
 
       mountPoints = [
@@ -112,6 +118,17 @@ module "kafka_task_definition" {
     ]
   }
 
+  # Plain Cloud Map A record, alongside Service Connect above. Service
+  # Connect's `kafka` client alias only resolves for tasks that got an Envoy
+  # sidecar injected, which only happens for tasks launched as part of an ECS
+  # service. audio-processing and track-metadata are invoked directly via
+  # ecs:RunTask (see main.tf), so they never get that sidecar — this record
+  # is what lets them (and the broker's own `--advertise-kafka-addr
+  # internal://kafka:9092`) resolve `kafka` through normal VPC DNS instead.
+  service_registries = {
+    registry_arn = aws_service_discovery_service.kafka.arn
+  }
+
   security_group_ingress_rules = merge(
     {
       for idx, sg_id in var.client_security_group_ids : "client_${idx}_kafka" => {
@@ -151,6 +168,31 @@ module "kafka_task_definition" {
   task_exec_iam_role_policies = {
     exec_policy = var.task_exec_policy_arn
   }
+
+  tags = var.tags
+}
+
+# Plain A record in the shared namespace created by modules/ecs-cluster, so
+# the broker is reachable over normal DNS as well as via Service Connect.
+# ECS registers/deregisters the task's ENI address as it starts and drains.
+resource "aws_service_discovery_service" "kafka" {
+  name        = "kafka"
+  description = "Kafka broker"
+
+  dns_config {
+    namespace_id   = var.service_discovery_namespace_id
+    routing_policy = "MULTIVALUE"
+
+    dns_records {
+      type = "A"
+      ttl  = 15
+    }
+  }
+
+  # Deliberately no health_check_custom_config — see modules/temporal/main.tf
+  # for why (AWS-deprecated attribute causes spurious replace-on-every-apply).
+
+  force_destroy = true
 
   tags = var.tags
 }

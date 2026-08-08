@@ -81,6 +81,11 @@ resource "random_password" "debezium" {
   special = false
 }
 
+resource "random_password" "temporal_db" {
+  length  = 32
+  special = false
+}
+
 resource "aws_secretsmanager_secret" "debezium" {
   name = "${var.name}/debezium-outbox-cdc"
 }
@@ -90,6 +95,18 @@ resource "aws_secretsmanager_secret_version" "debezium" {
   secret_string = jsonencode({
     username = "debezium"
     password = random_password.debezium.result
+  })
+}
+
+resource "aws_secretsmanager_secret" "temporal_db" {
+  name = "${var.name}/temporal-db"
+}
+
+resource "aws_secretsmanager_secret_version" "temporal_db" {
+  secret_id = aws_secretsmanager_secret.temporal_db.id
+  secret_string = jsonencode({
+    username = "temporal"
+    password = random_password.temporal_db.result
   })
 }
 

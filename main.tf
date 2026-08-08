@@ -148,13 +148,13 @@ module "audio_processing" {
     Workflow    = "audio-processing"
   }
 
-  media_bucket_arn          = module.storage.media_bucket_arn
-  media_bucket_id           = module.storage.media_bucket_id
-  ecs_cluster_arn           = module.ecs_cluster.cluster_arn
-  image_uri                 = "${module.container_registry.repository_urls["audio-processing"]}:latest"
-  private_subnets           = module.networking.private_subnets
-  event_bus_arn             = module.eventbridge.eventbridge_bus_arn
-  service_connect_namespace = module.ecs_cluster.service_discovery_namespace_name
+  media_bucket_arn        = module.storage.media_bucket_arn
+  media_bucket_id         = module.storage.media_bucket_id
+  ecs_cluster_arn         = module.ecs_cluster.cluster_arn
+  image_uri               = "${module.container_registry.repository_urls["audio-processing"]}:latest"
+  private_subnets         = module.networking.private_subnets
+  event_bus_arn           = module.eventbridge.eventbridge_bus_arn
+  kafka_bootstrap_servers = module.kafka.broker_dns_endpoint
 }
 
 module "search" {
@@ -191,11 +191,12 @@ module "kafka" {
     Workflow    = "kafka"
   }
 
-  vpc_id                    = module.networking.vpc_id
-  private_subnets           = module.networking.private_subnets
-  ecs_cluster_arn           = module.ecs_cluster.cluster_arn
-  service_connect_namespace = module.ecs_cluster.service_discovery_namespace_name
-  task_exec_policy_arn      = module.ecs_cluster.task_exec_policy_arn
+  vpc_id                         = module.networking.vpc_id
+  private_subnets                = module.networking.private_subnets
+  ecs_cluster_arn                = module.ecs_cluster.cluster_arn
+  service_connect_namespace      = module.ecs_cluster.service_discovery_namespace_name
+  service_discovery_namespace_id = module.ecs_cluster.service_discovery_namespace_id
+  task_exec_policy_arn           = module.ecs_cluster.task_exec_policy_arn
 
   client_security_group_ids = [
     module.backend.security_group_id,
@@ -281,12 +282,12 @@ module "track_metadata_processing" {
     Workflow    = "tm-processing"
   }
 
-  media_bucket_arn          = module.storage.media_bucket_arn
-  media_bucket_id           = module.storage.media_bucket_id
-  ecs_cluster_arn           = module.ecs_cluster.cluster_arn
-  image_uri                 = "${module.container_registry.repository_urls["track-metadata"]}:latest"
-  private_subnets           = module.networking.private_subnets
-  service_connect_namespace = module.ecs_cluster.service_discovery_namespace_name
+  media_bucket_arn        = module.storage.media_bucket_arn
+  media_bucket_id         = module.storage.media_bucket_id
+  ecs_cluster_arn         = module.ecs_cluster.cluster_arn
+  image_uri               = "${module.container_registry.repository_urls["track-metadata"]}:latest"
+  private_subnets         = module.networking.private_subnets
+  kafka_bootstrap_servers = module.kafka.broker_dns_endpoint
 }
 
 module "recommendations" {
@@ -408,15 +409,18 @@ module "backend" {
   media_bucket_name            = module.storage.media_bucket_name
   media_bucket_arn             = module.storage.media_bucket_arn
   cognito_user_pool_id         = module.auth.user_pool_id
-  cognito_app_client_id        = module.auth.user_pool_web_client_id
-  cognito_user_pool_arn        = module.auth.user_pool_arn
-  cf_media_key_id              = module.cdn.cf_media_key_id
-  cf_preview_key_id            = module.cdn.cf_preview_key_id
-  event_bus_name               = module.eventbridge.eventbridge_bus_name
-  event_bus_arn                = module.eventbridge.eventbridge_bus_arn
-  redis_host                   = module.database.redis_host
-  secret_prefix                = local.secret_prefix
-  task_exec_policy_arn         = module.ecs_cluster.task_exec_policy_arn
+  # cognitojwt accepts a comma-separated APP_CLIENT_ID; both clients must be allowed since
+  # the web app and mobile app authenticate against the same Cognito user pool but different
+  # app clients (see modules/auth/main.tf).
+  cognito_app_client_id = "${module.auth.user_pool_web_client_id},${module.auth.user_pool_mobile_client_id}"
+  cognito_user_pool_arn = module.auth.user_pool_arn
+  cf_media_key_id       = module.cdn.cf_media_key_id
+  cf_preview_key_id     = module.cdn.cf_preview_key_id
+  event_bus_name        = module.eventbridge.eventbridge_bus_name
+  event_bus_arn         = module.eventbridge.eventbridge_bus_arn
+  redis_host            = module.database.redis_host
+  secret_prefix         = local.secret_prefix
+  task_exec_policy_arn  = module.ecs_cluster.task_exec_policy_arn
 }
 
 module "temporal" {
@@ -446,8 +450,10 @@ module "temporal" {
 
   # Persistence lives on the existing RDS PostgreSQL instance, in its own
   # `temporal` and `temporal_visibility` databases created by the schema task.
+  # Uses a dedicated non-rotating secret so RDS master credential rotation
+  # does not break running Temporal tasks.
   db_host       = module.database.db_instance_host
-  db_secret_arn = module.database.db_instance_master_user_secret_arn
+  db_secret_arn = module.database.temporal_db_secret_arn
 
   # Services allowed to start workflows against the frontend on 7233.
   client_security_group_ids = [

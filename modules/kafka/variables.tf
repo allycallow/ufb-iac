@@ -19,6 +19,11 @@ variable "service_connect_namespace" {
   type        = string
 }
 
+variable "service_discovery_namespace_id" {
+  description = "Cloud Map namespace ID used to register a plain DNS A record for the broker, so standalone RunTask tasks (which get no Service Connect proxy) can resolve kafka:9092 too"
+  type        = string
+}
+
 variable "task_exec_policy_arn" {
   type = string
 }

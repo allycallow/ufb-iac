@@ -25,6 +25,11 @@ output "debezium_secret_arn" {
   value       = aws_secretsmanager_secret.debezium.arn
 }
 
+output "temporal_db_secret_arn" {
+  description = "Secrets Manager secret holding the dedicated Temporal PostgreSQL user credentials (username: temporal). Not auto-rotated — rotation is deliberate and paired with a Temporal redeployment. The role itself must be created manually: read the password from this secret, then run: CREATE USER temporal WITH PASSWORD '...'; GRANT ALL PRIVILEGES ON DATABASE temporal TO temporal; GRANT ALL PRIVILEGES ON DATABASE temporal_visibility TO temporal; and in each database: GRANT ALL ON SCHEMA public TO temporal; GRANT ALL ON ALL TABLES IN SCHEMA public TO temporal; GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO temporal; ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO temporal; ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO temporal;"
+  value       = aws_secretsmanager_secret.temporal_db.arn
+}
+
 output "redis_host" {
   value = aws_elasticache_replication_group.redis.primary_endpoint_address
 }
