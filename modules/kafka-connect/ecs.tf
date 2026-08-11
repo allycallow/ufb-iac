@@ -132,9 +132,9 @@ module "kafka_connect_task_definition" {
     }
   }
 
-  subnet_ids               = var.private_subnets
-  autoscaling_max_capacity = 1
-  desired_count            = 1
+  subnet_ids             = var.private_subnets
+  enable_autoscaling     = false
+  desired_count          = 1
 
   service_connect_configuration = {
     enabled   = true

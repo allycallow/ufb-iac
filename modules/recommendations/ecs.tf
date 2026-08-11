@@ -82,6 +82,18 @@ module "recommendations_task_definition" {
   subnet_ids               = var.private_subnets
   autoscaling_max_capacity = 2
 
+  # CPU only: the module default also adds a memory policy, doubling alarm count for no benefit.
+  autoscaling_policies = {
+    cpu = {
+      policy_type = "TargetTrackingScaling"
+      target_tracking_scaling_policy_configuration = {
+        predefined_metric_specification = {
+          predefined_metric_type = "ECSServiceAverageCPUUtilization"
+        }
+      }
+    }
+  }
+
   service_connect_configuration = {
     enabled   = true
     namespace = var.service_connect_namespace
