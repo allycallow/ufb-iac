@@ -122,7 +122,10 @@ locals {
 
     echo "==> registering namespace '$TEMPORAL_NAMESPACE'"
     if temporal operator namespace describe --namespace "$TEMPORAL_NAMESPACE" >/dev/null 2>&1; then
-      echo "    namespace already exists"
+      echo "    namespace already exists; reconciling retention to $TEMPORAL_RETENTION"
+      temporal operator namespace update \
+        --namespace "$TEMPORAL_NAMESPACE" \
+        --retention "$TEMPORAL_RETENTION"
     else
       temporal operator namespace create \
         --namespace "$TEMPORAL_NAMESPACE" \

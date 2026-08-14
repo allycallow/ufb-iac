@@ -275,9 +275,14 @@ variable "temporal_default_namespace" {
 }
 
 variable "temporal_default_namespace_retention" {
-  description = "Retention for the auto-registered default namespace."
+  description = <<-EOT
+    Retention for the auto-registered default namespace. Only bounds CLOSED
+    workflows — history for closed executions is purged once it's older than
+    this window, regardless of whether the server was up the whole time.
+    240h (10 days) comfortably survives a weekend ECS scale-down; 72h does not.
+  EOT
   type        = string
-  default     = "72h"
+  default     = "240h"
 }
 
 variable "server_roles" {

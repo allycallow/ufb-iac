@@ -33,6 +33,30 @@ resource "local_file" "debezium_postgres_outbox_source_config" {
   })
 }
 
+locals {
+  # Connector configs to register on every task start. Registration is via
+  # POST /connectors (not PUT .../config) and failures are swallowed: POST
+  # 409s if the connector already exists, which is the common case on a
+  # routine redeploy. This only needs to *create* connectors that are
+  # missing — e.g. after the Kafka `_connect-configs` topic is lost — not
+  # push config updates to existing ones. For that, run
+  # scripts/register-connectors.sh by hand.
+  connector_configs = {
+    "sqs-audio-uploads-source"        = file("${path.module}/connector-config/sqs-audio-uploads-source.json")
+    "opensearch-sink"                 = file("${path.module}/connector-config/opensearch-sink.json")
+    "debezium-postgres-outbox-source" = local_file.debezium_postgres_outbox_source_config.content
+  }
+
+  connector_registrar_command = join("\n", [
+    for connector_name, config in local.connector_configs : <<-EOT
+      cat <<'CONNECTOR_JSON' >/tmp/${connector_name}.json
+      ${config}
+      CONNECTOR_JSON
+      wget -q -O- --header='Content-Type: application/json' --post-file=/tmp/${connector_name}.json http://localhost:8083/connectors >/dev/null 2>&1 || true
+    EOT
+  ])
+}
+
 module "kafka_connect_task_definition" {
   source = "terraform-aws-modules/ecs/aws//modules/service"
 
@@ -128,13 +152,41 @@ module "kafka_connect_task_definition" {
         }
       ]
 
+      healthCheck = {
+        command     = ["CMD-SHELL", "wget -q -O- http://localhost:8083/ >/dev/null 2>&1 || exit 1"]
+        interval    = 10
+        timeout     = 5
+        retries     = 5
+        startPeriod = 30
+      }
+
+      enable_cloudwatch_logging = true
+    }
+
+    connector-registrar = {
+      cpu                    = 0
+      memory                 = 128
+      essential              = false
+      image                  = "public.ecr.aws/docker/library/busybox:1.36.1"
+      user                   = "0"
+      readonlyRootFilesystem = false
+      entrypoint             = ["/bin/sh", "-ec"]
+      command                = [local.connector_registrar_command]
+
+      dependsOn = [
+        {
+          containerName = "kafka-connect"
+          condition     = "HEALTHY"
+        }
+      ]
+
       enable_cloudwatch_logging = true
     }
   }
 
-  subnet_ids             = var.private_subnets
-  enable_autoscaling     = false
-  desired_count          = 1
+  subnet_ids         = var.private_subnets
+  enable_autoscaling = false
+  desired_count      = 1
 
   service_connect_configuration = {
     enabled   = true
