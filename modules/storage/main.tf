@@ -29,6 +29,34 @@ resource "aws_s3_bucket_public_access_block" "media" {
   restrict_public_buckets = true
 }
 
+# WAV originals and their HLS/DRM derivatives share the same audio/ prefix
+# (distinguished only by extension - see the .wav suffix filter in
+# modules/audio-processing/main.tf), so a prefix-based lifecycle rule can't
+# tell them apart. Instead this targets the archive-tier=source tag, which
+# the audio-processing task applies to a WAV object only after it has been
+# transcoded successfully - untagged (unprocessed, or still-processing)
+# objects are never matched and stay in Standard.
+resource "aws_s3_bucket_lifecycle_configuration" "media" {
+  bucket = aws_s3_bucket.media.id
+
+  rule {
+    id     = "archive-processed-wav-originals"
+    status = "Enabled"
+
+    filter {
+      tag {
+        key   = "archive-tier"
+        value = "source"
+      }
+    }
+
+    transition {
+      days          = var.wav_archive_after_days
+      storage_class = "DEEP_ARCHIVE"
+    }
+  }
+}
+
 # Events Bucket
 
 resource "aws_s3_bucket" "events" {
