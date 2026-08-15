@@ -117,3 +117,112 @@ resource "aws_iam_role_policy" "audio_track_events_policy" {
     ]
   })
 }
+
+# Stripe delivers events to its own AWS partner event bus (not the shared
+# custom bus above), so this rule lives on that bus rather than
+# var.event_bus_name. The bus only ever carries Stripe events, so filtering
+# on detail-type (Stripe's event `type`) is enough without also matching on
+# source.
+resource "aws_cloudwatch_event_rule" "stripe_events" {
+  name           = "${var.name}-stripe-events"
+  event_bus_name = var.stripe_event_bus_name
+  event_pattern = jsonencode({
+    "detail-type" = [
+      "customer.subscription.created",
+      "customer.subscription.updated",
+      "customer.subscription.deleted",
+    ]
+  })
+}
+
+resource "aws_cloudwatch_event_target" "stripe_events_api_destination" {
+  rule           = aws_cloudwatch_event_rule.stripe_events.name
+  event_bus_name = var.stripe_event_bus_name
+  arn            = aws_cloudwatch_event_api_destination.stripe_events_destination.arn
+  role_arn       = aws_iam_role.stripe_events_role.arn
+
+  dead_letter_config {
+    arn = aws_sqs_queue.stripe_events_dlq.arn
+  }
+
+  retry_policy {
+    maximum_event_age_in_seconds = 3600
+    maximum_retry_attempts       = 3
+  }
+}
+
+resource "aws_sqs_queue" "stripe_events_dlq" {
+  name                      = "${var.name}-stripe-events-dlq"
+  message_retention_seconds = 1209600 # 14 days
+}
+
+resource "aws_sqs_queue_policy" "stripe_events_dlq" {
+  queue_url = aws_sqs_queue.stripe_events_dlq.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "AllowEventBridgeRule"
+        Effect    = "Allow"
+        Principal = { Service = "events.amazonaws.com" }
+        Action    = "sqs:SendMessage"
+        Resource  = aws_sqs_queue.stripe_events_dlq.arn
+        Condition = {
+          ArnEquals = {
+            "aws:SourceArn" = aws_cloudwatch_event_rule.stripe_events.arn
+          }
+        }
+      }
+    ]
+  })
+}
+
+resource "aws_cloudwatch_event_api_destination" "stripe_events_destination" {
+  name                = "${var.name}-stripe-events-destination"
+  invocation_endpoint = "https://new-admin.upfrontbeats.com/api/stripe-events/"
+  http_method         = "POST"
+  connection_arn      = aws_cloudwatch_event_connection.stripe_events_connection.arn
+}
+
+resource "aws_cloudwatch_event_connection" "stripe_events_connection" {
+  name               = "${var.name}-stripe-events-connection"
+  authorization_type = "API_KEY"
+
+  auth_parameters {
+    api_key {
+      key   = "x-api-key"
+      value = jsondecode(data.aws_secretsmanager_secret_version.backend_api_key.secret_string)["API_KEY"]
+    }
+  }
+}
+
+resource "aws_iam_role" "stripe_events_role" {
+  name = "${var.name}-stripe-events-role"
+  assume_role_policy = jsonencode({
+    "Version" : "2012-10-17",
+    "Statement" : [{
+      "Effect" : "Allow",
+      "Principal" : {
+        "Service" : "events.amazonaws.com"
+      },
+      "Action" : "sts:AssumeRole"
+    }]
+  })
+}
+
+resource "aws_iam_role_policy" "stripe_events_policy" {
+  name = "${var.name}-stripe-events-policy"
+  role = aws_iam_role.stripe_events_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action   = "events:InvokeApiDestination"
+        Effect   = "Allow"
+        Resource = [aws_cloudwatch_event_api_destination.stripe_events_destination.arn]
+      }
+    ]
+  })
+}

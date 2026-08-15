@@ -3,6 +3,12 @@ variable "s3_media_bucket_name" {
   default = "production-ufb-media"
 }
 
+variable "stripe_event_bus_name" {
+  description = "Name of the AWS partner event bus Stripe delivers events to (AWS EventBridge > Partner event sources - accepted once in the console, not managed here)"
+  type        = string
+  default     = "aws.partner/stripe.com/ed_test_61QDhFpupjNC6SV7216Q7kr4MBE9nAw6NHJIqCSEK46i"
+}
+
 variable "viewer_response_lambda_arn" {
   type    = string
   default = "arn:aws:lambda:us-east-1:081077757258:function:production-ufb-view-response:2"

@@ -418,6 +418,7 @@ module "backend" {
   cf_preview_key_id     = module.cdn.cf_preview_key_id
   event_bus_name        = module.eventbridge.eventbridge_bus_name
   event_bus_arn         = module.eventbridge.eventbridge_bus_arn
+  stripe_event_bus_name = var.stripe_event_bus_name
   redis_host            = module.database.redis_host
   secret_prefix         = local.secret_prefix
   task_exec_policy_arn  = module.ecs_cluster.task_exec_policy_arn

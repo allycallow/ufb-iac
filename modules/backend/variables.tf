@@ -93,6 +93,11 @@ variable "event_bus_arn" {
   type        = string
 }
 
+variable "stripe_event_bus_name" {
+  description = "Name of the AWS partner event bus Stripe delivers events to"
+  type        = string
+}
+
 variable "redis_host" {
   description = "Hostname of the ElastiCache Redis node"
   type        = string
