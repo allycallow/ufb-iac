@@ -60,12 +60,12 @@ variable "teleport_security_group_id" {
 
 variable "cpu" {
   type    = number
-  default = 512
+  default = 1024
 }
 
 variable "memory" {
   type    = number
-  default = 1024
+  default = 2048
 }
 
 variable "tags" {

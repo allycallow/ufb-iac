@@ -156,8 +156,8 @@ module "kafka_connect_task_definition" {
         command     = ["CMD-SHELL", "wget -q -O- http://localhost:8083/ >/dev/null 2>&1 || exit 1"]
         interval    = 10
         timeout     = 5
-        retries     = 5
-        startPeriod = 30
+        retries     = 10
+        startPeriod = 60
       }
 
       enable_cloudwatch_logging = true
@@ -172,6 +172,13 @@ module "kafka_connect_task_definition" {
       readonlyRootFilesystem = false
       entrypoint             = ["/bin/sh", "-ec"]
       command                = [local.connector_registrar_command]
+
+      # kafka-connect's own healthCheck needs startPeriod(60s) + up to
+      # retries(10) * interval(10s) = 160s worst case before it reports
+      # HEALTHY, mostly spent on JVM plugin-classpath scanning. The module's
+      # default startTimeout (30s) is far shorter than that, so ECS was
+      # killing the whole task before kafka-connect ever came up.
+      startTimeout = 180
 
       dependsOn = [
         {
