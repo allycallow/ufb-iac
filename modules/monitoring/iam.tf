@@ -21,6 +21,29 @@ resource "aws_iam_policy" "efs_access" {
   })
 }
 
+resource "aws_iam_policy" "cloudwatch_read" {
+  name        = "${var.name}-CloudwatchReadPolicy"
+  description = "Allows Grafana's native CloudWatch datasource to query metrics (e.g. SQS DLQ depth)"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        # CloudWatch's read APIs don't support resource-level restriction, per AWS's
+        # own IAM reference for these actions.
+        Action = [
+          "cloudwatch:GetMetricData",
+          "cloudwatch:GetMetricStatistics",
+          "cloudwatch:ListMetrics",
+          "tag:GetResources"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
 resource "aws_iam_policy" "tempo_s3_access" {
   name        = "TempoS3AccessPolicy"
   description = "Allows Grafana Tempo on ECS to manage its storage bucket"

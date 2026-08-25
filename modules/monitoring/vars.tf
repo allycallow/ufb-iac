@@ -56,3 +56,8 @@ variable "temporal_metrics_targets" {
   type        = list(string)
   default     = []
 }
+
+variable "stripe_webhook_dlq_dashboard_json" {
+  description = "Raw JSON content of the Stripe webhook DLQ Grafana dashboard, provisioned into Grafana on container start"
+  type        = string
+}

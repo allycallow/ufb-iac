@@ -332,6 +332,16 @@ module "idempotency" {
   }
 }
 
+module "stripe_webhook_dlq" {
+  source = "./modules/stripe-webhook-dlq"
+  stage  = terraform.workspace
+
+  tags = {
+    Environment = terraform.workspace
+    Name        = local.name
+  }
+}
+
 module "monitoring" {
   source = "./modules/monitoring"
 
@@ -364,6 +374,8 @@ module "monitoring" {
   temporal_metrics_targets = [
     "temporal-frontend.${module.ecs_cluster.service_discovery_namespace_name}:9090",
   ]
+
+  stripe_webhook_dlq_dashboard_json = file("${path.module}/modules/stripe-webhook-dlq/dashboard.json")
 }
 
 module "frontend" {

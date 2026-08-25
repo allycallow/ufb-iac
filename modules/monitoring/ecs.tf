@@ -92,6 +92,53 @@ module "monitoring_service" {
       image                  = "grafana/grafana-oss:11.4.0"
       essential              = true
       readonlyRootFilesystem = false
+      entrypoint             = ["/bin/sh", "-ec"]
+      command = [<<-EOT
+        mkdir -p /etc/grafana/provisioning/datasources /etc/grafana/provisioning/dashboards /etc/grafana/dashboards
+
+        cat <<'EOF' >/etc/grafana/provisioning/datasources/datasources.yml
+        apiVersion: 1
+        datasources:
+          - name: Prometheus
+            uid: prometheus
+            type: prometheus
+            access: proxy
+            url: http://prometheus:9090
+            isDefault: true
+            editable: false
+          - name: Tempo
+            uid: tempo
+            type: tempo
+            access: proxy
+            url: http://tempo:3200
+            editable: false
+          - name: CloudWatch
+            uid: cloudwatch
+            type: cloudwatch
+            access: proxy
+            jsonData:
+              authType: default
+              defaultRegion: eu-west-2
+            editable: false
+        EOF
+
+        cat <<'EOF' >/etc/grafana/provisioning/dashboards/dashboards.yml
+        apiVersion: 1
+        providers:
+          - name: default
+            folder: ""
+            type: file
+            options:
+              path: /etc/grafana/dashboards
+        EOF
+
+        cat <<'EOF' >/etc/grafana/dashboards/stripe-webhook-dlq.json
+        ${var.stripe_webhook_dlq_dashboard_json}
+        EOF
+
+        exec /run.sh
+      EOT
+      ]
       portMappings = [
         {
           name          = "grafana"
@@ -168,9 +215,9 @@ module "monitoring_service" {
     }
   }
 
-  subnet_ids             = var.private_subnets
-  enable_autoscaling     = false
-  desired_count          = 1
+  subnet_ids         = var.private_subnets
+  enable_autoscaling = false
+  desired_count      = 1
 
   service_connect_configuration = {
     enabled   = true
@@ -249,8 +296,9 @@ module "monitoring_service" {
   }
 
   tasks_iam_role_policies = {
-    TempoS3Access = aws_iam_policy.tempo_s3_access.arn
-    EfsAccess     = aws_iam_policy.efs_access.arn
+    TempoS3Access        = aws_iam_policy.tempo_s3_access.arn
+    EfsAccess            = aws_iam_policy.efs_access.arn
+    CloudwatchReadAccess = aws_iam_policy.cloudwatch_read.arn
   }
 
   tags = var.tags
