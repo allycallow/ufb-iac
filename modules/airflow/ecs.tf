@@ -52,12 +52,13 @@ module "airflow_task_definition" {
 
   container_definitions = {
     airflow = {
-      cpu                    = 2048
-      memory                 = 4096
-      essential              = true
-      image                  = var.image_uri
-      user                   = "0"
-      readonlyRootFilesystem = false
+      cpu                                    = 2048
+      memory                                 = 4096
+      essential                              = true
+      image                                  = var.image_uri
+      user                                   = "0"
+      readonlyRootFilesystem                 = false
+      cloudwatch_log_group_retention_in_days = 1
 
       portMappings = [
         {
@@ -165,10 +166,11 @@ module "airflow_task_definition" {
     }
 
     statsd-exporter = {
-      memory                 = 256
-      image                  = "prom/statsd-exporter:v0.27.1"
-      essential              = false
-      readonlyRootFilesystem = false
+      memory                                 = 256
+      image                                  = "prom/statsd-exporter:v0.27.1"
+      essential                              = false
+      readonlyRootFilesystem                 = false
+      cloudwatch_log_group_retention_in_days = 1
       portMappings = [
         {
           name          = "statsd-exporter"

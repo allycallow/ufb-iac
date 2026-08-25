@@ -24,12 +24,13 @@ module "frontend_task_definition" {
 
   container_definitions = {
     frontend = {
-      cpu                    = 1024
-      memory                 = 2048
-      essential              = true
-      image                  = var.image_uri
-      user                   = "0"
-      readonlyRootFilesystem = false
+      cpu                                    = 1024
+      memory                                 = 2048
+      essential                              = true
+      image                                  = var.image_uri
+      user                                   = "0"
+      readonlyRootFilesystem                 = false
+      cloudwatch_log_group_retention_in_days = 1
 
       portMappings = [
         {

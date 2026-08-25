@@ -40,12 +40,13 @@ module "kafka_task_definition" {
 
   container_definitions = {
     kafka = {
-      cpu                    = var.cpu
-      memory                 = var.memory
-      essential              = true
-      image                  = "docker.redpanda.com/redpandadata/redpanda:v24.2.18"
-      user                   = "0"
-      readonlyRootFilesystem = false
+      cpu                                    = var.cpu
+      memory                                 = var.memory
+      essential                              = true
+      image                                  = "docker.redpanda.com/redpandadata/redpanda:v24.2.18"
+      user                                   = "0"
+      readonlyRootFilesystem                 = false
+      cloudwatch_log_group_retention_in_days = 1
 
       # Advertised addresses use the Cloud Map FQDN, not the Service Connect
       # `kafka` short name: this is what the broker hands back to every
@@ -91,9 +92,9 @@ module "kafka_task_definition" {
     }
   }
 
-  subnet_ids               = var.private_subnets
-  enable_autoscaling       = false
-  desired_count            = 1
+  subnet_ids         = var.private_subnets
+  enable_autoscaling = false
+  desired_count      = 1
 
   service_connect_configuration = {
     enabled   = true

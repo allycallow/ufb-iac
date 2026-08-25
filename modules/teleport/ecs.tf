@@ -127,13 +127,14 @@ module "teleport_task_definition" {
 
   container_definitions = {
     config-writer = {
-      cpu                    = 0
-      memory                 = 128
-      essential              = false
-      image                  = "public.ecr.aws/docker/library/busybox:1.36.1"
-      user                   = "0"
-      readonlyRootFilesystem = false
-      entrypoint             = ["/bin/sh", "-ec"]
+      cpu                                    = 0
+      memory                                 = 128
+      essential                              = false
+      image                                  = "public.ecr.aws/docker/library/busybox:1.36.1"
+      user                                   = "0"
+      readonlyRootFilesystem                 = false
+      cloudwatch_log_group_retention_in_days = 1
+      entrypoint                             = ["/bin/sh", "-ec"]
       command = [<<-EOT
         cat <<'EOF' >/etc/teleport/teleport.yaml
         ${local.teleport_config}
@@ -153,12 +154,13 @@ module "teleport_task_definition" {
     }
 
     teleport = {
-      cpu                    = 256
-      memory                 = 896
-      essential              = true
-      image                  = "public.ecr.aws/gravitational/teleport-distroless:18.7.3"
-      user                   = "0"
-      readonlyRootFilesystem = false
+      cpu                                    = 256
+      memory                                 = 896
+      essential                              = true
+      image                                  = "public.ecr.aws/gravitational/teleport-distroless:18.7.3"
+      user                                   = "0"
+      readonlyRootFilesystem                 = false
+      cloudwatch_log_group_retention_in_days = 1
 
       dependsOn = [
         {
@@ -193,9 +195,9 @@ module "teleport_task_definition" {
     }
   }
 
-  subnet_ids             = var.private_subnets
-  enable_autoscaling     = false
-  desired_count          = 1
+  subnet_ids         = var.private_subnets
+  enable_autoscaling = false
+  desired_count      = 1
 
   service_connect_configuration = {
     enabled   = true

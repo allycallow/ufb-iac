@@ -24,12 +24,13 @@ module "recommendations_task_definition" {
 
   container_definitions = {
     recommendations = {
-      cpu                    = 512
-      memory                 = 1024
-      essential              = true
-      image                  = var.image_uri
-      user                   = "0"
-      readonlyRootFilesystem = false
+      cpu                                    = 512
+      memory                                 = 1024
+      essential                              = true
+      image                                  = var.image_uri
+      user                                   = "0"
+      readonlyRootFilesystem                 = false
+      cloudwatch_log_group_retention_in_days = 1
 
       portMappings = [
         {
