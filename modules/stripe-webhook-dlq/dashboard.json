@@ -382,6 +382,56 @@
       "datasource": { "type": "cloudwatch", "uid": "${datasource}" },
       "fieldConfig": {
         "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 1 }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 5 },
+      "id": 11,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "datasource": { "type": "cloudwatch", "uid": "${datasource}" },
+          "dimensions": { "QueueName": "production-ufb-customer-subscription-updated-dlq" },
+          "matchExact": true,
+          "metricEditorMode": 0,
+          "metricName": "ApproximateNumberOfMessagesVisible",
+          "metricQueryType": 0,
+          "namespace": "AWS/SQS",
+          "queryMode": "Metrics",
+          "refId": "A",
+          "region": "eu-west-2",
+          "statistic": "Maximum"
+        }
+      ],
+      "title": "customer-subscription-updated",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "cloudwatch", "uid": "${datasource}" },
+      "fieldConfig": {
+        "defaults": {
           "color": { "mode": "palette-classic" },
           "custom": {
             "axisBorderShow": false,
@@ -518,6 +568,19 @@
           "namespace": "AWS/SQS",
           "queryMode": "Metrics",
           "refId": "G",
+          "region": "eu-west-2",
+          "statistic": "Maximum"
+        },
+        {
+          "datasource": { "type": "cloudwatch", "uid": "${datasource}" },
+          "dimensions": { "QueueName": "production-ufb-customer-subscription-updated-dlq" },
+          "matchExact": true,
+          "metricEditorMode": 0,
+          "metricName": "ApproximateNumberOfMessagesVisible",
+          "metricQueryType": 0,
+          "namespace": "AWS/SQS",
+          "queryMode": "Metrics",
+          "refId": "H",
           "region": "eu-west-2",
           "statistic": "Maximum"
         }
@@ -662,6 +725,19 @@
           "namespace": "AWS/SQS",
           "queryMode": "Metrics",
           "refId": "G",
+          "region": "eu-west-2",
+          "statistic": "Maximum"
+        },
+        {
+          "datasource": { "type": "cloudwatch", "uid": "${datasource}" },
+          "dimensions": { "QueueName": "production-ufb-customer-subscription-updated-dlq" },
+          "matchExact": true,
+          "metricEditorMode": 0,
+          "metricName": "ApproximateAgeOfOldestMessage",
+          "metricQueryType": 0,
+          "namespace": "AWS/SQS",
+          "queryMode": "Metrics",
+          "refId": "H",
           "region": "eu-west-2",
           "statistic": "Maximum"
         }

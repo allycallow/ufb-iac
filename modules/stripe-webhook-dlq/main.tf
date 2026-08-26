@@ -15,6 +15,7 @@ locals {
     "invoice-paid",
     "invoice-payment-failed",
     "customer-subscription-created",
+    "customer-subscription-updated",
     "customer-subscription-trial-ended",
     "customer-subscription-canceled-payment-failed",
     "payment-method-attached",
