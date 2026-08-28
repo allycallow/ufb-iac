@@ -1,3 +1,11 @@
+data "aws_secretsmanager_secret" "oauth_secrets" {
+  name = "${var.name}/auth-oauth-secrets"
+}
+
+data "aws_secretsmanager_secret_version" "oauth_secrets" {
+  secret_id = data.aws_secretsmanager_secret.oauth_secrets.id
+}
+
 resource "aws_cognito_user_pool" "pool" {
   name                     = var.name
   username_attributes      = ["email"]
@@ -166,7 +174,7 @@ resource "aws_cognito_identity_provider" "google" {
 
   provider_details = {
     client_id        = var.google_client_id
-    client_secret    = var.google_client_secret
+    client_secret    = jsondecode(data.aws_secretsmanager_secret_version.oauth_secrets.secret_string)["google_client_secret"]
     authorize_scopes = "openid email profile"
   }
 
@@ -205,10 +213,13 @@ resource "aws_cognito_identity_provider" "apple" {
   }
 
   provider_details = {
-    client_id        = var.apple_client_id
-    team_id          = var.apple_team_id
-    key_id           = var.apple_key_id
-    private_key      = replace(var.apple_private_key, "\\n", "\n")
+    client_id = var.apple_client_id
+    team_id   = var.apple_team_id
+    key_id    = var.apple_key_id
+    private_key = replace(
+      jsondecode(data.aws_secretsmanager_secret_version.oauth_secrets.secret_string)["apple_private_key"],
+      "\\n", "\n"
+    )
     authorize_scopes = "email name"
   }
 

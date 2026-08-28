@@ -98,15 +98,13 @@ module "cdn" {
 module "auth" {
   source = "./modules/auth"
 
-  name                 = local.name
-  domain               = local.domain
-  account_id           = data.aws_caller_identity.current.account_id
-  google_client_id     = var.google_client_id
-  google_client_secret = var.google_client_secret
-  apple_client_id      = var.apple_client_id
-  apple_team_id        = var.apple_team_id
-  apple_key_id         = var.apple_key_id
-  apple_private_key    = var.apple_private_key
+  name             = local.name
+  domain           = local.domain
+  account_id       = data.aws_caller_identity.current.account_id
+  google_client_id = var.google_client_id
+  apple_client_id  = var.apple_client_id
+  apple_team_id    = var.apple_team_id
+  apple_key_id     = var.apple_key_id
 }
 
 module "ecs_cluster" {
