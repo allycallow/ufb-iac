@@ -94,7 +94,7 @@ module "monitoring_service" {
       readonlyRootFilesystem = false
       entrypoint             = ["/bin/sh", "-ec"]
       command = [<<-EOT
-        mkdir -p /etc/grafana/provisioning/datasources /etc/grafana/provisioning/dashboards /etc/grafana/dashboards
+        mkdir -p /etc/grafana/provisioning/datasources /etc/grafana/provisioning/dashboards
 
         cat <<'EOF' >/etc/grafana/provisioning/datasources/datasources.yml
         apiVersion: 1
@@ -129,10 +129,10 @@ module "monitoring_service" {
             folder: ""
             type: file
             options:
-              path: /etc/grafana/dashboards
+              path: /etc/grafana/provisioning/dashboards
         EOF
 
-        cat <<'EOF' >/etc/grafana/dashboards/stripe-webhook-dlq.json
+        cat <<'EOF' >/etc/grafana/provisioning/dashboards/stripe-webhook-dlq.json
         ${var.stripe_webhook_dlq_dashboard_json}
         EOF
 
