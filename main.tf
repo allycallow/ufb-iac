@@ -398,6 +398,17 @@ module "frontend" {
   task_exec_policy_arn      = module.ecs_cluster.task_exec_policy_arn
 }
 
+module "schema_registry" {
+  source = "./modules/schema-registry"
+  name   = local.name
+
+  tags = {
+    Environment = terraform.workspace
+    Name        = local.name
+    Workflow    = "schema-registry"
+  }
+}
+
 module "backend" {
   source = "./modules/backend"
 
@@ -434,6 +445,8 @@ module "backend" {
   redis_host            = module.database.redis_host
   secret_prefix         = local.secret_prefix
   task_exec_policy_arn  = module.ecs_cluster.task_exec_policy_arn
+  schema_registry_arn   = module.schema_registry.registry_arn
+  schema_registry_name  = module.schema_registry.registry_name
 }
 
 module "temporal" {

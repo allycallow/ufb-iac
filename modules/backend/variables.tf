@@ -113,6 +113,16 @@ variable "task_exec_policy_arn" {
   type        = string
 }
 
+variable "schema_registry_arn" {
+  description = "ARN of the Glue registry holding outbox_event payload contracts"
+  type        = string
+}
+
+variable "schema_registry_name" {
+  description = "Name of the Glue registry holding outbox_event payload contracts, passed to the backend as SCHEMA_REGISTRY_NAME"
+  type        = string
+}
+
 variable "tags" {
   description = "Tags to apply to all resources"
   type        = map(string)

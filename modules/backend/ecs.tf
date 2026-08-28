@@ -105,6 +105,10 @@ module "backend_task_definition" {
           "value" : "kafka:9092"
         },
         {
+          "name" : "SCHEMA_REGISTRY_NAME",
+          "value" : var.schema_registry_name
+        },
+        {
           "name" : "RUDDER_STACK_DATA_PLANE_URL",
           "value" : "https://upfrontbeajzbi.dataplane.rudderstack.com"
         },
@@ -284,6 +288,16 @@ module "backend_task_definition" {
       effect  = "Allow"
       resources = [
         "arn:aws:dynamodb:eu-west-2:${data.aws_caller_identity.current.account_id}:table/production-ufb-recently-played"
+      ]
+    },
+    {
+      # Read-only: schema changes go through Terraform (modules/schema-registry),
+      # not app-driven auto-registration, so contract changes stay reviewable in PRs.
+      actions = ["glue:GetSchemaVersion", "glue:GetSchemaByDefinition", "glue:CheckSchemaVersionValidity"]
+      effect  = "Allow"
+      resources = [
+        var.schema_registry_arn,
+        "arn:aws:glue:eu-west-2:${data.aws_caller_identity.current.account_id}:schema/${var.schema_registry_name}/*"
       ]
     }
   ]
