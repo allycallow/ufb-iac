@@ -153,6 +153,13 @@ module "airflow_task_definition" {
           name      = "BACKEND_API_KEY"
           valueFrom = "arn:aws:secretsmanager:eu-west-2:${data.aws_caller_identity.current.account_id}:secret:prod/ufb/airflow-JDJfSg:BACKEND_API_KEY::"
         },
+        {
+          # Overrides the UI-managed "prod-ufb-db" connection. Airflow's
+          # env-var connection lookup uppercases conn_id as-is (no dash-to-
+          # underscore substitution), so the name must keep the dashes.
+          name      = "AIRFLOW_CONN_PROD-UFB-DB"
+          valueFrom = "arn:aws:secretsmanager:eu-west-2:${data.aws_caller_identity.current.account_id}:secret:prod/ufb/airflow-JDJfSg:AIRFLOW_CONN_PROD-UFB-DB::"
+        },
       ]
 
       logConfiguration = {
@@ -299,7 +306,8 @@ module "airflow_task_definition" {
       actions = [
         "dynamodb:PutItem",
         "dynamodb:UpdateItem",
-        "dynamodb:BatchWriteItem"
+        "dynamodb:BatchWriteItem",
+        "dynamodb:Query"
       ]
       resources = [
         "arn:aws:dynamodb:eu-west-2:${data.aws_caller_identity.current.account_id}:table/production-ufb-recommendations"
