@@ -621,6 +621,9 @@ module "airflow" {
   service_connect_namespace    = module.ecs_cluster.service_discovery_namespace_name
   task_exec_policy_arn         = module.ecs_cluster.task_exec_policy_arn
 
+  opensearch_domain_endpoint = module.search.opensearch_domain_endpoint
+  opensearch_domain_arn      = module.search.opensearch_domain_arn
+
   # ~$78/month on-demand -> ~$23 on Spot. Single task on LocalExecutor, so a
   # reclaim interrupts in-flight DAG tasks and drops the UI for 1-2 minutes.
   use_spot = true

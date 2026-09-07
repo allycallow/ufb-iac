@@ -129,6 +129,10 @@ module "airflow_task_definition" {
         {
           name  = "AIRFLOW__METRICS__STATSD_PREFIX"
           value = "airflow"
+        },
+        {
+          name  = "OPENSEARCH_DOMAIN_ENDPOINT"
+          value = var.opensearch_domain_endpoint
         }
       ]
 
@@ -325,6 +329,20 @@ module "airflow_task_definition" {
         "identitystore:ListGroupMembershipsForMember"
       ]
       resources = ["*"]
+    },
+
+    # OpenSearch access for the reindex_opensearch DAG (mirrors modules/search)
+    {
+      effect = "Allow"
+      actions = [
+        "es:ESHttpGet",
+        "es:ESHttpPut",
+        "es:ESHttpPost",
+        "es:ESHttpDelete"
+      ]
+      resources = [
+        "${var.opensearch_domain_arn}/*"
+      ]
     }
   ]
 

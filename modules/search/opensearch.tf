@@ -6,7 +6,7 @@ locals {
 
 resource "aws_opensearch_domain" "main" {
   domain_name    = "ufb-production"
-  engine_version = "OpenSearch_2.11"
+  engine_version = "OpenSearch_2.19"
 
   access_policies = jsonencode({
     Version = "2012-10-17"

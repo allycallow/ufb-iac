@@ -68,3 +68,13 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "opensearch_domain_endpoint" {
+  description = "Endpoint of the shared OpenSearch domain, for the reindex_opensearch DAG"
+  type        = string
+}
+
+variable "opensearch_domain_arn" {
+  description = "ARN of the shared OpenSearch domain, for the reindex_opensearch DAG's IAM permissions"
+  type        = string
+}
