@@ -127,6 +127,10 @@ module "backend_task_definition" {
         {
           "name" : "OTEL_EXPORTER_OTLP_TIMEOUT",
           "value" : "30000"
+        },
+        {
+          "name" : "KNOCK_EXPO_CHANNEL_ID",
+          "value" : "2c1f2e7a-2044-4adb-8fe0-26c63a7600d8"
         }
       ]
 
