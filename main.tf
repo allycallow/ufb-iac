@@ -95,6 +95,12 @@ module "cdn" {
   origin_response_lambda_arn = var.origin_response_lambda_arn
 }
 
+module "cast_receiver" {
+  source = "./modules/cast-receiver"
+
+  name = local.name
+}
+
 module "auth" {
   source = "./modules/auth"
 

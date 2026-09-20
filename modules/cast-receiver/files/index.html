@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<!--
+  Custom Google Cast Web Receiver for Upfront Beats.
+
+  Deployed by this module (see ../main.tf) to an S3 bucket served through
+  CloudFront — not part of ufb-frontend's Next.js build. It has to be a
+  bare, standalone page: it runs in the Chromecast device's own browser
+  environment, with none of the frontend app's Amplify/Apollo/Auth/player
+  context available to it.
+
+  Register the module's `receiver_url` output as a Custom Receiver in the
+  Google Cast SDK Developer Console (https://cast.google.com/publish), then
+  set the resulting Application ID as NEXT_PUBLIC_CAST_APP_ID in the sender
+  app's (ufb-frontend) environment.
+-->
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Upfront Beats — Cast Receiver</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #000;
+      }
+    </style>
+  </head>
+  <body>
+    <cast-media-player></cast-media-player>
+    <script src="https://www.gstatic.com/cast/sdk/libs/caf_receiver/3.0/cast_receiver_framework.js"></script>
+    <script src="./receiver.js"></script>
+  </body>
+</html>

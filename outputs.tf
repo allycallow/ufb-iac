@@ -38,3 +38,10 @@ output "temporal_worker_repository_url" {
   description = "ECR repository to push the Python worker image to."
   value       = module.container_registry.repository_urls["temporal-worker"]
 }
+
+# ── Cast Receiver ─────────────────────────────────────────────────────────────
+
+output "cast_receiver_url" {
+  description = "Register this as the Web Receiver URL at https://cast.google.com/publish."
+  value       = module.cast_receiver.receiver_url
+}
