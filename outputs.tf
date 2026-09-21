@@ -45,3 +45,8 @@ output "cast_receiver_url" {
   description = "Register this as the Web Receiver URL at https://cast.google.com/publish."
   value       = module.cast_receiver.receiver_url
 }
+
+output "cast_manifest_rewrite_lambda_arn" {
+  description = "Versioned ARN to wire into the /audio/* behavior's origin-response lambda_function_association in modules/cdn/main.tf (include_body = true)."
+  value       = module.cast_manifest_rewrite.qualified_arn
+}

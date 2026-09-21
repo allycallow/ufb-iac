@@ -22,10 +22,29 @@ terraform {
       source  = "hashicorp/local"
       version = ">= 2.5.0"
     }
+    archive = {
+      source  = "hashicorp/archive"
+      version = ">= 2.4.0"
+    }
   }
 }
 
 provider "aws" {
+  default_tags {
+    tags = {
+      Environment = terraform.workspace
+      Name        = local.name
+    }
+  }
+}
+
+# Lambda@Edge functions must be created in us-east-1 regardless of where
+# they're actually served from — CloudFront replicates them to edge
+# locations globally on its own once published here.
+provider "aws" {
+  alias  = "us_east_1"
+  region = "us-east-1"
+
   default_tags {
     tags = {
       Environment = terraform.workspace
@@ -97,6 +116,15 @@ module "cdn" {
 
 module "cast_receiver" {
   source = "./modules/cast-receiver"
+
+  name = local.name
+}
+
+module "cast_manifest_rewrite" {
+  source = "./modules/cast-manifest-rewrite"
+  providers = {
+    aws = aws.us_east_1
+  }
 
   name = local.name
 }
