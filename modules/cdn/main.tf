@@ -2,6 +2,39 @@ data "aws_cloudfront_origin_request_policy" "this" {
   name = "Managed-CORS-S3Origin"
 }
 
+# Same CORS-supporting headers as Managed-CORS-S3Origin above, but also
+# forwards the query string to origin — needed only on the /audio/* (cmaf)
+# behavior below, so cast-manifest-rewrite's origin-response Lambda can
+# read a signed Cast request's query string and propagate it into the
+# manifest it rewrites. Origin request policies control what's forwarded
+# to origin independently of caching, unlike a cache policy's
+# query_strings_config, which CloudFront rejects setting to anything but
+# "none" when that cache policy has caching fully disabled (as
+# audio_segments below does).
+resource "aws_cloudfront_origin_request_policy" "audio_cmaf_with_querystring" {
+  name    = "${terraform.workspace}-audio-cmaf-with-querystring"
+  comment = "Managed-CORS-S3Origin, plus forwarding the query string a Cast signed URL carries."
+
+  cookies_config {
+    cookie_behavior = "none"
+  }
+
+  headers_config {
+    header_behavior = "whitelist"
+    headers {
+      items = [
+        "Origin",
+        "Access-Control-Request-Headers",
+        "Access-Control-Request-Method",
+      ]
+    }
+  }
+
+  query_strings_config {
+    query_string_behavior = "all"
+  }
+}
+
 data "aws_cloudfront_cache_policy" "this" {
   name = "Managed-CachingOptimized"
 }
@@ -59,6 +92,14 @@ resource "aws_cloudfront_cache_policy" "audio_segments" {
       header_behavior = "none"
     }
 
+    # CloudFront rejects any query_string_behavior other than "none" on a
+    # cache policy with caching fully disabled (min/default/max TTL all 0,
+    # as above) — "InvalidArgument: The parameter QueryStringBehavior is
+    # invalid for policy with caching disabled." Forwarding the signed
+    # Cast request's query string to origin (so cast-manifest-rewrite's
+    # origin-response Lambda can read and propagate it) is handled instead
+    # by the audio_cmaf_with_querystring origin request policy below,
+    # which is independent of caching.
     query_strings_config {
       query_string_behavior = "none"
     }
@@ -188,9 +229,32 @@ resource "aws_cloudfront_distribution" "media" {
     compress                   = true
     viewer_protocol_policy     = "redirect-to-https"
     trusted_key_groups         = [aws_cloudfront_key_group.cf_media_keygroup.id]
-    origin_request_policy_id   = data.aws_cloudfront_origin_request_policy.this.id
+    origin_request_policy_id   = aws_cloudfront_origin_request_policy.audio_cmaf_with_querystring.id
     cache_policy_id            = aws_cloudfront_cache_policy.audio_segments.id
     response_headers_policy_id = aws_cloudfront_response_headers_policy.custom.id
+
+    # Rewrites a Cast-issued signed URL's query string onto every
+    # segment/init URI inside an .m3u8 manifest so one signed request
+    # authorizes the whole track, the same way a signed cookie implicitly
+    # already does for browser playback (see ufb-iac's
+    # cast-manifest-rewrite module). No-ops on every other request,
+    # including all existing cookie-authorized browser traffic — it only
+    # acts on a request that carries a query string.
+    #
+    # This has to be origin-request, not origin-response: Lambda@Edge
+    # functions on a response event are never given the origin's response
+    # body at all (confirmed by CloudFront itself — associating
+    # include_body with an origin-response event was rejected outright:
+    # "InvalidLambdaFunctionAssociation: The IncludeBody option can only
+    # be used with viewer-request or origin-request events", and that
+    # option only ever covers *request* bodies regardless). The Lambda
+    # fetches the manifest itself from S3 and returns a complete response
+    # object, short-circuiting the real origin fetch — no include_body
+    # needed, since it never reads a request body either.
+    lambda_function_association {
+      event_type = "origin-request"
+      lambda_arn = var.cast_manifest_rewrite_lambda_arn
+    }
   }
 
   ordered_cache_behavior {

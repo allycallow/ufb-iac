@@ -49,3 +49,7 @@ variable "viewer_request_lambda_arn" {
 variable "origin_response_lambda_arn" {
   type = string
 }
+
+variable "cast_manifest_rewrite_lambda_arn" {
+  type = string
+}

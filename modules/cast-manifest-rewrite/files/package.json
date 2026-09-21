@@ -1,0 +1,12 @@
+{
+  "name": "cast-manifest-rewrite",
+  "private": true,
+  "description": "Lambda@Edge origin-request function, deployed by ../main.tf. AWS recommends always bundling the SDK modules a function uses rather than relying on the runtime-included version, since that version isn't guaranteed stable across automatic runtime updates.",
+  "main": "origin-request.js",
+  "scripts": {
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.600.0"
+  }
+}

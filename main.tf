@@ -99,19 +99,20 @@ module "storage" {
 module "cdn" {
   source = "./modules/cdn"
 
-  name                       = local.name
-  domain                     = local.domain
-  media_bucket_domain_name   = module.storage.media_bucket_domain_name
-  media_bucket_id            = module.storage.media_bucket_id
-  media_bucket_arn           = module.storage.media_bucket_arn
-  frontend_bucket_id         = module.storage.frontend_bucket_id
-  frontend_bucket_arn        = module.storage.frontend_bucket_arn
-  alb_dns_name               = module.alb.dns_name
-  media_public_key_pem       = tls_private_key.media.public_key_pem
-  preview_public_key_pem     = tls_private_key.preview_media.public_key_pem
-  viewer_response_lambda_arn = var.viewer_response_lambda_arn
-  viewer_request_lambda_arn  = var.viewer_request_lambda_arn
-  origin_response_lambda_arn = var.origin_response_lambda_arn
+  name                             = local.name
+  domain                           = local.domain
+  media_bucket_domain_name         = module.storage.media_bucket_domain_name
+  media_bucket_id                  = module.storage.media_bucket_id
+  media_bucket_arn                 = module.storage.media_bucket_arn
+  frontend_bucket_id               = module.storage.frontend_bucket_id
+  frontend_bucket_arn              = module.storage.frontend_bucket_arn
+  alb_dns_name                     = module.alb.dns_name
+  media_public_key_pem             = tls_private_key.media.public_key_pem
+  preview_public_key_pem           = tls_private_key.preview_media.public_key_pem
+  viewer_response_lambda_arn       = var.viewer_response_lambda_arn
+  viewer_request_lambda_arn        = var.viewer_request_lambda_arn
+  origin_response_lambda_arn       = var.origin_response_lambda_arn
+  cast_manifest_rewrite_lambda_arn = module.cast_manifest_rewrite.qualified_arn
 }
 
 module "cast_receiver" {
@@ -126,7 +127,8 @@ module "cast_manifest_rewrite" {
     aws = aws.us_east_1
   }
 
-  name = local.name
+  name             = local.name
+  media_bucket_arn = module.storage.media_bucket_arn
 }
 
 module "auth" {
