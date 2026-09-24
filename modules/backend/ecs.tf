@@ -179,6 +179,10 @@ module "backend_task_definition" {
           "name" : "SEARCH_API_KEY",
           "valueFrom" : "${var.secret_prefix}:SEARCH_API_KEY::"
         },
+        {
+          "name" : "REVENUECAT_WEBHOOK_AUTH",
+          "valueFrom" : "${var.secret_prefix}:revenuecat_webhook_auth::"
+        },
       ]
     }
   }
