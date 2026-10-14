@@ -483,6 +483,37 @@ module "backend" {
   schema_registry_name  = module.schema_registry.registry_name
 }
 
+module "unleash" {
+  source = "./modules/unleash"
+
+  name = "${local.name}-unleash"
+
+  tags = {
+    Environment = terraform.workspace
+    Name        = local.name
+    Workflow    = "unleash"
+  }
+
+  account_id = data.aws_caller_identity.current.account_id
+  region     = local.region
+
+  ecs_cluster_arn              = module.ecs_cluster.cluster_arn
+  vpc_id                       = module.networking.vpc_id
+  task_exec_policy_arn         = module.ecs_cluster.task_exec_policy_arn
+  service_connect_namespace    = module.ecs_cluster.service_discovery_namespace_name
+  private_subnets              = module.networking.private_subnets
+  alb_security_group_id        = module.alb.security_group_id
+  alb_target_group_arn         = module.alb.target_groups["unleash"].arn
+  monitoring_security_group_id = module.monitoring.security_group_id
+
+  # Dedicated non-rotating secret (see db_secret_arn output), created by this
+  # module. db_master_secret_arn is used only by the one-off db-bootstrap task
+  # to create the matching Postgres role/database — never by the running
+  # service.
+  db_host              = module.database.db_instance_host
+  db_master_secret_arn = module.database.db_instance_master_user_secret_arn
+}
+
 module "temporal" {
   source = "./modules/temporal"
 

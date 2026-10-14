@@ -39,6 +39,28 @@ output "temporal_worker_repository_url" {
   value       = module.container_registry.repository_urls["temporal-worker"]
 }
 
+# ── Unleash ───────────────────────────────────────────────────────────────────
+
+output "unleash_url" {
+  description = "Public Unleash admin UI / Frontend API. Needs a DNS record pointed at the ALB — see alb.tf — created the same way as the other *.upfrontbeats.com subdomains on this load balancer."
+  value       = "https://unleash.upfrontbeats.com"
+}
+
+output "unleash_db_secret_arn" {
+  description = "Dedicated, non-rotating Unleash DB credentials. Read the password from here when running the db-bootstrap task, or after rotating it by hand."
+  value       = module.unleash.db_secret_arn
+}
+
+output "unleash_db_bootstrap_task_definition_family" {
+  description = "Run once with `aws ecs run-task` before the first Unleash service start — see modules/unleash/README.md."
+  value       = module.unleash.db_bootstrap_task_definition_family
+}
+
+output "unleash_run_task_network_configuration" {
+  description = "Ready-made --network-configuration argument for the db-bootstrap one-off task."
+  value       = module.unleash.run_task_network_configuration
+}
+
 # ── Cast Receiver ─────────────────────────────────────────────────────────────
 
 output "cast_receiver_url" {

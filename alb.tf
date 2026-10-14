@@ -122,6 +122,28 @@ module "alb" {
 
       create_attachment = false
     }
+
+    unleash = {
+      backend_protocol                  = "HTTP"
+      backend_port                      = 4242
+      target_type                       = "ip"
+      deregistration_delay              = 5
+      load_balancing_cross_zone_enabled = true
+
+      health_check = {
+        enabled             = true
+        healthy_threshold   = 3
+        interval            = 15
+        matcher             = "200-399"
+        path                = "/health"
+        port                = "traffic-port"
+        protocol            = "HTTP"
+        timeout             = 5
+        unhealthy_threshold = 2
+      }
+
+      create_attachment = false
+    }
   }
 
   listeners = {
@@ -194,6 +216,19 @@ module "alb" {
           actions = [{
             type             = "forward"
             target_group_key = "monitoring"
+          }]
+        }
+
+        unleash = {
+          priority = 4
+          conditions = [{
+            host_header = {
+              values = ["unleash.upfrontbeats.com"]
+            }
+          }]
+          actions = [{
+            type             = "forward"
+            target_group_key = "unleash"
           }]
         }
       }
