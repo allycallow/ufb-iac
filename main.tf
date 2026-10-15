@@ -1,5 +1,17 @@
 data "aws_ssoadmin_instances" "this" {}
 
+# ufb-ddex-ingest's .circleci/config.yml pushes an image tagged with both
+# "latest" and the git commit SHA to the same digest on every deploy, then
+# updates the running ECS task definition directly via the SHA tag -
+# bypassing Terraform entirely. Resolving "latest" back to that same SHA
+# tag (rather than using the literal string "latest") means this module's
+# own desired image state actually matches what's really running, so a
+# plan stops wanting to replace the task definition after every deploy.
+data "aws_ecr_image" "ddex_ingest_deployed" {
+  repository_name = module.container_registry.repository_names["ddex-ingest"]
+  image_tag       = "latest"
+}
+
 terraform {
   required_version = "~> v1.12.2"
 
@@ -62,6 +74,19 @@ locals {
   secret_prefix     = "arn:aws:secretsmanager:${local.region}:${data.aws_caller_identity.current.account_id}:secret:prod/ufb/backend-NKRahZ"
   instance_arn      = tolist(data.aws_ssoadmin_instances.this.arns)[0]
   identity_store_id = tolist(data.aws_ssoadmin_instances.this.identity_store_ids)[0]
+
+  # The non-"latest" tag on that same digest - normally the git commit SHA
+  # CircleCI tagged it with. Falls back to "latest" itself if that's ever
+  # the only tag present (e.g. before CircleCI has deployed anything).
+  ddex_ingest_deployed_tags = [
+    for tag in data.aws_ecr_image.ddex_ingest_deployed.image_tags : tag
+    if tag != "latest"
+  ]
+  ddex_ingest_deployed_tag = (
+    length(local.ddex_ingest_deployed_tags) > 0
+    ? local.ddex_ingest_deployed_tags[0]
+    : "latest"
+  )
 }
 
 # ── Infrastructure Modules ────────────────────────────────────────────────────
@@ -204,7 +229,7 @@ module "ddex_delivery" {
   }
 
   ecs_cluster_arn         = module.ecs_cluster.cluster_arn
-  image_uri               = "${module.container_registry.repository_urls["ddex-ingest"]}:latest"
+  image_uri               = "${module.container_registry.repository_urls["ddex-ingest"]}:${local.ddex_ingest_deployed_tag}"
   private_subnets         = module.networking.private_subnets
   event_bus_arn           = module.eventbridge.eventbridge_bus_arn
   kafka_bootstrap_servers = module.kafka.broker_dns_endpoint
