@@ -43,6 +43,7 @@ locals {
   # scripts/register-connectors.sh by hand.
   connector_configs = {
     "sqs-audio-uploads-source"        = file("${path.module}/connector-config/sqs-audio-uploads-source.json")
+    "sqs-ddex-deliveries-source"      = file("${path.module}/connector-config/sqs-ddex-deliveries-source.json")
     "opensearch-sink"                 = file("${path.module}/connector-config/opensearch-sink.json")
     "debezium-postgres-outbox-source" = local_file.debezium_postgres_outbox_source_config.content
   }
@@ -261,6 +262,17 @@ module "kafka_connect_task_definition" {
         "sqs:GetQueueUrl"
       ]
       resources = [var.audio_upload_queue_arn]
+    },
+    {
+      sid    = "DdexDeliverySourceAccess"
+      effect = "Allow"
+      actions = [
+        "sqs:ReceiveMessage",
+        "sqs:DeleteMessage",
+        "sqs:GetQueueAttributes",
+        "sqs:GetQueueUrl"
+      ]
+      resources = [var.ddex_delivery_queue_arn]
     },
     {
       sid    = "DebeziumSecretAccess"

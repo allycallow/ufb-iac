@@ -85,7 +85,8 @@ module "container_registry" {
     "track-metadata",
     "recommendations",
     "kafka-connect",
-    "temporal-worker"
+    "temporal-worker",
+    "ddex-ingest"
   ]
 }
 
@@ -191,6 +192,25 @@ module "audio_processing" {
   kafka_bootstrap_servers = module.kafka.broker_dns_endpoint
 }
 
+module "ddex_delivery" {
+  source = "./modules/ddex-delivery"
+
+  name = "${local.name}-ddex-delivery"
+
+  tags = {
+    Environment = terraform.workspace
+    Name        = local.name
+    Workflow    = "ddex-delivery"
+  }
+
+  ecs_cluster_arn         = module.ecs_cluster.cluster_arn
+  image_uri               = "${module.container_registry.repository_urls["ddex-ingest"]}:latest"
+  private_subnets         = module.networking.private_subnets
+  event_bus_arn           = module.eventbridge.eventbridge_bus_arn
+  kafka_bootstrap_servers = module.kafka.broker_dns_endpoint
+  s3_vpc_endpoint_id      = module.networking.s3_vpc_endpoint_id
+}
+
 module "search" {
   source = "./modules/search"
 
@@ -238,6 +258,7 @@ module "kafka" {
     module.temporal.worker_security_group_id,
     module.audio_processing.security_group_id,
     module.track_metadata_processing.security_group_id,
+    module.ddex_delivery.security_group_id,
   ]
 
   metrics_client_security_group_ids = [
@@ -264,6 +285,7 @@ module "kafka_connect" {
   image_uri                  = "${module.container_registry.repository_urls["kafka-connect"]}:latest"
   opensearch_domain_arn      = module.search.opensearch_domain_arn
   audio_upload_queue_arn     = module.audio_processing.queue_arn
+  ddex_delivery_queue_arn    = module.ddex_delivery.queue_arn
   debezium_secret_arn        = module.database.debezium_secret_arn
   db_host                    = module.database.db_instance_host
   db_name                    = "ufb"
@@ -566,11 +588,14 @@ module "temporal" {
 
   # TrackIngestionSagaWorkflow's trigger topic, and the ECS RunTask activities
   # it drives — audio-processing and track-metadata, invoked the same way
-  # Airflow's EcsRunTaskOperator used to.
+  # Airflow's EcsRunTaskOperator used to. DDEX delivery ingestion follows the
+  # same RunTask pattern, triggered off its own Kafka topic instead.
   worker_environment = {
     KAFKA_BOOTSTRAP_SERVERS             = "kafka:9092"
     KAFKA_AUDIO_UPLOADS_TOPIC           = "ufb.audio_uploads"
     KAFKA_TRACK_PROCESSING_EVENTS_TOPIC = "ufb.track_processing_events"
+    KAFKA_DDEX_DELIVERIES_TOPIC         = "ufb.ddex_deliveries"
+    KAFKA_DDEX_DELIVERY_EVENTS_TOPIC    = "ufb.ddex_delivery_events"
 
     BACKEND_ENDPOINT = "https://new-admin.upfrontbeats.com"
 
@@ -584,6 +609,10 @@ module "temporal" {
     TRACK_METADATA_TASK_DEFINITION = module.track_metadata_processing.task_definition_family
     TRACK_METADATA_CONTAINER_NAME  = "tm-processing"
     TRACK_METADATA_SECURITY_GROUP  = module.track_metadata_processing.security_group_id
+
+    DDEX_INGEST_TASK_DEFINITION = module.ddex_delivery.task_definition_family
+    DDEX_INGEST_CONTAINER_NAME  = "ddex-ingest"
+    DDEX_INGEST_SECURITY_GROUP  = module.ddex_delivery.security_group_id
   }
 
   worker_secrets = {
@@ -602,6 +631,7 @@ module "temporal" {
       resources = [
         "arn:aws:ecs:${local.region}:${data.aws_caller_identity.current.account_id}:task-definition/${module.audio_processing.task_definition_family}:*",
         "arn:aws:ecs:${local.region}:${data.aws_caller_identity.current.account_id}:task-definition/${module.track_metadata_processing.task_definition_family}:*",
+        "arn:aws:ecs:${local.region}:${data.aws_caller_identity.current.account_id}:task-definition/${module.ddex_delivery.task_definition_family}:*",
         "arn:aws:ecs:${local.region}:${data.aws_caller_identity.current.account_id}:task/${module.ecs_cluster.cluster_name}/*",
       ]
     },
@@ -614,6 +644,8 @@ module "temporal" {
         module.audio_processing.task_exec_role_arn,
         module.track_metadata_processing.task_role_arn,
         module.track_metadata_processing.task_exec_role_arn,
+        module.ddex_delivery.task_role_arn,
+        module.ddex_delivery.task_exec_role_arn,
       ]
       condition = [{
         test     = "StringEquals"

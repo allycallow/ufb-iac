@@ -38,6 +38,11 @@ variable "audio_upload_queue_arn" {
   type        = string
 }
 
+variable "ddex_delivery_queue_arn" {
+  description = "ARN of the SQS queue the DDEX delivery source connector reads from, for scoping the task role's sqs:* permissions"
+  type        = string
+}
+
 variable "debezium_secret_arn" {
   description = "ARN of the Secrets Manager secret holding the debezium replication user's credentials, referenced by the outbox source connector config via the secretsmanager config provider"
   type        = string

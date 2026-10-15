@@ -37,3 +37,8 @@ output "redis_sg_id" {
 output "vpc_lambda_sg_id" {
   value = module.security_group_vpc_lambda.security_group_id
 }
+
+output "s3_vpc_endpoint_id" {
+  description = "ID of the shared S3 Gateway endpoint, for bucket policies that restrict reads to in-VPC access only (aws:sourceVpce condition)"
+  value       = aws_vpc_endpoint.s3.id
+}
