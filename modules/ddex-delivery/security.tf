@@ -1,7 +1,14 @@
 # Dedicated CMK so a leaked bucket-read permission isn't enough on its own -
 # the reader also needs kms:Decrypt on this specific key, which only the
-# ddex-ingest task role (and account admins, via the standard "root can
-# delegate through IAM" statement) hold.
+# ddex-ingest, audio-processing, and track-metadata task roles (and account
+# admins, via the standard "root can delegate through IAM" statement) hold.
+# audio-processing/track-metadata were added so DDEX-delivered audio can be
+# encoded/analyzed directly from this bucket (DdexDeliveryWorkflow starts
+# TrackIngestionSagaWorkflow with this bucket/key once a Track exists) -
+# without them, those ECS tasks would get AccessDenied reading a delivery
+# object even though the S3 bucket policy's VPC-endpoint check passes (both
+# run in the same private subnets as ddex-ingest, behind the same S3 Gateway
+# endpoint).
 resource "aws_kms_key" "deliveries" {
   description             = "Encrypts DDEX delivery assets at rest in ${var.name}"
   deletion_window_in_days = 30
@@ -24,6 +31,22 @@ resource "aws_kms_key" "deliveries" {
         Effect = "Allow"
         Principal = {
           AWS = module.ddex_ingest_task_definition.tasks_iam_role_arn
+        }
+        Action = [
+          "kms:Decrypt",
+          "kms:GenerateDataKey",
+          "kms:DescribeKey",
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "AllowAudioPipelineTaskDecrypt"
+        Effect = "Allow"
+        Principal = {
+          AWS = [
+            var.audio_processing_task_role_arn,
+            var.track_metadata_task_role_arn,
+          ]
         }
         Action = [
           "kms:Decrypt",

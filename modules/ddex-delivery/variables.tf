@@ -45,6 +45,16 @@ variable "s3_vpc_endpoint_id" {
   type        = string
 }
 
+variable "audio_processing_task_role_arn" {
+  description = "Task role ARN of the audio-processing ECS task - granted kms:Decrypt on the delivery CMK so it can encode a DDEX-delivered audio file directly from this bucket."
+  type        = string
+}
+
+variable "track_metadata_task_role_arn" {
+  description = "Task role ARN of the track-metadata ECS task - granted kms:Decrypt on the delivery CMK so it can analyze a DDEX-delivered audio file directly from this bucket."
+  type        = string
+}
+
 variable "stale_delivery_retention_days" {
   description = "Fallback expiration for delivery objects that never get tagged ddex-processed=true - e.g. a delivery that failed validation and was never retried. Long enough to debug, short enough that abandoned deliveries don't accumulate indefinitely."
   type        = number

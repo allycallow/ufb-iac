@@ -209,6 +209,9 @@ module "ddex_delivery" {
   event_bus_arn           = module.eventbridge.eventbridge_bus_arn
   kafka_bootstrap_servers = module.kafka.broker_dns_endpoint
   s3_vpc_endpoint_id      = module.networking.s3_vpc_endpoint_id
+
+  audio_processing_task_role_arn = module.audio_processing.task_role_arn
+  track_metadata_task_role_arn   = module.track_metadata_processing.task_role_arn
 }
 
 module "search" {
