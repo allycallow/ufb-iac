@@ -161,6 +161,19 @@ resource "aws_ecs_service" "server" {
   # "frontend,history,matching,worker" and ECS rejects commas in tag values.
   tags = merge(var.tags, { Role = each.key })
 
+  lifecycle {
+    # This (and every other production service) gets scaled to 0 directly
+    # via the AWS CLI/console for cost, outside Terraform - without this,
+    # any apply that touches anything in this resource's dependency chain
+    # (even something unrelated, like a sibling module's task definition)
+    # silently scales it back up to desired_count's configured value.
+    # Confirmed the hard way: applying an unrelated fix to
+    # module.temporal.module.worker's task definition scaled this to 1
+    # (caught and reverted via `aws ecs update-service` within seconds,
+    # before any task started).
+    ignore_changes = [desired_count]
+  }
+
   depends_on = [
     aws_vpc_security_group_egress_rule.server_all,
     aws_iam_role_policy_attachment.task_exec_db_secret,

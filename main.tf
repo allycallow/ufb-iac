@@ -1,14 +1,27 @@
 data "aws_ssoadmin_instances" "this" {}
 
-# ufb-ddex-ingest's .circleci/config.yml pushes an image tagged with both
-# "latest" and the git commit SHA to the same digest on every deploy, then
-# updates the running ECS task definition directly via the SHA tag -
-# bypassing Terraform entirely. Resolving "latest" back to that same SHA
-# tag (rather than using the literal string "latest") means this module's
-# own desired image state actually matches what's really running, so a
-# plan stops wanting to replace the task definition after every deploy.
-data "aws_ecr_image" "ddex_ingest_deployed" {
-  repository_name = module.container_registry.repository_names["ddex-ingest"]
+# Each of these repos' .circleci/config.yml pushes an image tagged with
+# both "latest" and the git commit SHA to the same digest on every deploy,
+# then updates the running ECS task definition directly via the SHA tag
+# (aws-ecs/update_service's container_image_name_updates) - bypassing
+# Terraform entirely. Resolving "latest" back to that same SHA tag here
+# (rather than using the literal string "latest") means each module's own
+# desired image state actually matches what's really running, so a plan
+# stops wanting to replace the task definition after every deploy - see
+# the ufb-iac drift notes for how this was root-caused.
+locals {
+  circleci_deployed_repos = toset([
+    "ddex-ingest",
+    "backend",
+    "frontend",
+    "airflow",
+    "temporal-worker",
+  ])
+}
+
+data "aws_ecr_image" "deployed" {
+  for_each        = local.circleci_deployed_repos
+  repository_name = module.container_registry.repository_names[each.key]
   image_tag       = "latest"
 }
 
@@ -75,18 +88,17 @@ locals {
   instance_arn      = tolist(data.aws_ssoadmin_instances.this.arns)[0]
   identity_store_id = tolist(data.aws_ssoadmin_instances.this.identity_store_ids)[0]
 
-  # The non-"latest" tag on that same digest - normally the git commit SHA
-  # CircleCI tagged it with. Falls back to "latest" itself if that's ever
-  # the only tag present (e.g. before CircleCI has deployed anything).
-  ddex_ingest_deployed_tags = [
-    for tag in data.aws_ecr_image.ddex_ingest_deployed.image_tags : tag
-    if tag != "latest"
-  ]
-  ddex_ingest_deployed_tag = (
-    length(local.ddex_ingest_deployed_tags) > 0
-    ? local.ddex_ingest_deployed_tags[0]
-    : "latest"
-  )
+  # Each repo's non-"latest" tag on that same digest - normally the git
+  # commit SHA CircleCI tagged it with. Falls back to "latest" itself if
+  # that's ever the only tag present (e.g. before CircleCI has deployed
+  # anything for a given repo).
+  deployed_image_tags = {
+    for repo, img in data.aws_ecr_image.deployed :
+    repo => try(
+      [for tag in img.image_tags : tag if tag != "latest"][0],
+      "latest"
+    )
+  }
 }
 
 # ── Infrastructure Modules ────────────────────────────────────────────────────
@@ -229,7 +241,7 @@ module "ddex_delivery" {
   }
 
   ecs_cluster_arn         = module.ecs_cluster.cluster_arn
-  image_uri               = "${module.container_registry.repository_urls["ddex-ingest"]}:${local.ddex_ingest_deployed_tag}"
+  image_uri               = "${module.container_registry.repository_urls["ddex-ingest"]}:${local.deployed_image_tags["ddex-ingest"]}"
   private_subnets         = module.networking.private_subnets
   event_bus_arn           = module.eventbridge.eventbridge_bus_arn
   kafka_bootstrap_servers = module.kafka.broker_dns_endpoint
@@ -474,7 +486,7 @@ module "frontend" {
   }
 
   ecs_cluster_arn           = module.ecs_cluster.cluster_arn
-  image_uri                 = "${module.container_registry.repository_urls["frontend"]}:latest"
+  image_uri                 = "${module.container_registry.repository_urls["frontend"]}:${local.deployed_image_tags["frontend"]}"
   alb_security_group_id     = module.alb.security_group_id
   private_subnets           = module.networking.private_subnets
   alb_target_group_arn      = module.alb.target_groups["frontend"].arn
@@ -505,7 +517,7 @@ module "backend" {
   }
 
   ecs_cluster_arn              = module.ecs_cluster.cluster_arn
-  image_uri                    = "${module.container_registry.repository_urls["backend"]}:latest"
+  image_uri                    = "${module.container_registry.repository_urls["backend"]}:${local.deployed_image_tags["backend"]}"
   alb_security_group_id        = module.alb.security_group_id
   monitoring_security_group_id = module.monitoring.security_group_id
   frontend_security_group_id   = module.frontend.security_group_id
@@ -587,7 +599,7 @@ module "temporal" {
   service_discovery_namespace_id   = module.ecs_cluster.service_discovery_namespace_id
   service_discovery_namespace_name = module.ecs_cluster.service_discovery_namespace_name
 
-  worker_image_uri = "${module.container_registry.repository_urls["temporal-worker"]}:latest"
+  worker_image_uri = "${module.container_registry.repository_urls["temporal-worker"]}:${local.deployed_image_tags["temporal-worker"]}"
 
   # Persistence lives on the existing RDS PostgreSQL instance, in its own
   # `temporal` and `temporal_visibility` databases created by the schema task.
@@ -740,7 +752,7 @@ module "airflow" {
   }
 
   ecs_cluster_arn              = module.ecs_cluster.cluster_arn
-  image_uri                    = "${module.container_registry.repository_urls["airflow"]}:latest"
+  image_uri                    = "${module.container_registry.repository_urls["airflow"]}:${local.deployed_image_tags["airflow"]}"
   alb_security_group_id        = module.alb.security_group_id
   monitoring_security_group_id = module.monitoring.security_group_id
   private_subnets              = module.networking.private_subnets
