@@ -227,13 +227,18 @@ resource "aws_cognito_identity_provider" "apple" {
 
   lifecycle {
     # As above: endpoints Cognito fills in for the managed SignInWithApple
-    # provider type.
+    # provider type. private_key is different - Cognito never returns it on
+    # read (write-only, by design), so every plan sees it as missing and
+    # wants to re-add it, forever, regardless of whether it's actually set
+    # correctly live. Ignoring it here is the standard fix for this exact
+    # AWS provider quirk, not a sign the key itself is wrong.
     ignore_changes = [
       provider_details["attributes_url_add_attributes"],
       provider_details["authorize_url"],
       provider_details["oidc_issuer"],
       provider_details["token_request_method"],
       provider_details["token_url"],
+      provider_details["private_key"],
     ]
   }
 }

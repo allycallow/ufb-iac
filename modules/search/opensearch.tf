@@ -42,6 +42,10 @@ resource "aws_opensearch_domain" "main" {
     "rest.action.multi.allow_explicit_index" = "true"
     "indices.fielddata.cache.size"           = "20"
     "indices.query.bool.max_clause_count"    = "1024"
+    # AWS sets this itself (Elasticsearch-client version compatibility at
+    # the domain's root endpoint) - declaring it explicitly here just
+    # matches what's actually live, so a plan stops wanting to remove it.
+    "override_main_response_version" = "true"
   }
 
   node_to_node_encryption {
