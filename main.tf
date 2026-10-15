@@ -16,6 +16,8 @@ locals {
     "frontend",
     "airflow",
     "temporal-worker",
+    "audio-processing",
+    "track-metadata",
   ])
 }
 
@@ -223,7 +225,7 @@ module "audio_processing" {
   media_bucket_arn        = module.storage.media_bucket_arn
   media_bucket_id         = module.storage.media_bucket_id
   ecs_cluster_arn         = module.ecs_cluster.cluster_arn
-  image_uri               = "${module.container_registry.repository_urls["audio-processing"]}:latest"
+  image_uri               = "${module.container_registry.repository_urls["audio-processing"]}:${local.deployed_image_tags["audio-processing"]}"
   private_subnets         = module.networking.private_subnets
   event_bus_arn           = module.eventbridge.eventbridge_bus_arn
   kafka_bootstrap_servers = module.kafka.broker_dns_endpoint
@@ -381,7 +383,7 @@ module "track_metadata_processing" {
   media_bucket_arn        = module.storage.media_bucket_arn
   media_bucket_id         = module.storage.media_bucket_id
   ecs_cluster_arn         = module.ecs_cluster.cluster_arn
-  image_uri               = "${module.container_registry.repository_urls["track-metadata"]}:latest"
+  image_uri               = "${module.container_registry.repository_urls["track-metadata"]}:${local.deployed_image_tags["track-metadata"]}"
   private_subnets         = module.networking.private_subnets
   kafka_bootstrap_servers = module.kafka.broker_dns_endpoint
 }
