@@ -53,6 +53,10 @@ terraform {
       source  = "hashicorp/archive"
       version = ">= 2.4.0"
     }
+    grafana = {
+      source  = "grafana/grafana"
+      version = ">= 3.0.0"
+    }
   }
 }
 
@@ -78,6 +82,18 @@ provider "aws" {
       Name        = local.name
     }
   }
+}
+
+# Grafana itself is a service this same config provisions (modules/monitoring)
+# - it only exists/is reachable once that ECS service is actually running
+# (desiredCount > 0), same scale-to-zero caveat as everything else here.
+data "aws_secretsmanager_secret_version" "grafana" {
+  secret_id = "prod/ufb/grafana"
+}
+
+provider "grafana" {
+  url  = "https://monitoring.${local.domain}"
+  auth = jsondecode(data.aws_secretsmanager_secret_version.grafana.secret_string)["terraform_api_key"]
 }
 
 locals {
