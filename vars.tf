@@ -56,3 +56,17 @@ variable "cognito_certificate_arn" {
   default     = "arn:aws:acm:us-east-1:081077757258:certificate/e5eb1087-ba5d-4b03-8dd9-40a321e39f48"
 }
 
+variable "track_metadata_sentry_dsn" {
+  description = "Sentry DSN for track-metadata error reporting (dedicated Sentry project)."
+  type        = string
+  default     = "https://0ab1a064c7a68e8345959cf31a1c0e3a@o4504955106951168.ingest.us.sentry.io/4512264809742336"
+  sensitive   = true
+}
+
+variable "temporal_worker_sentry_dsn" {
+  description = "Sentry DSN for the Temporal worker's error reporting (dedicated Sentry project)."
+  type        = string
+  default     = "https://966dceb8eb769e6bd98fada0ebec1685@o4504955106951168.ingest.us.sentry.io/4512264807776256"
+  sensitive   = true
+}
+

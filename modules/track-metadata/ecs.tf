@@ -3,6 +3,22 @@ resource "aws_cloudwatch_log_group" "track_metadata_processing" {
   retention_in_days = 1
 }
 
+# Terraform-managed, unlike audio-processing's and ddex-ingest's secrets
+# (those were created by hand before this repo settled on this convention —
+# see modules/unleash/main.tf's aws_secretsmanager_secret.db for the same
+# pattern). var.sentry_dsn defaults to "", so this can apply before a real
+# Sentry project exists; analyzer.py skips sentry_sdk.init when the DSN is
+# empty.
+resource "aws_secretsmanager_secret" "sentry" {
+  name = "${terraform.workspace}-tm-processing-sentry"
+  tags = var.tags
+}
+
+resource "aws_secretsmanager_secret_version" "sentry" {
+  secret_id     = aws_secretsmanager_secret.sentry.id
+  secret_string = jsonencode({ SENTRY_DSN = var.sentry_dsn })
+}
+
 module "track_metadata_processing_task_definition" {
   source = "terraform-aws-modules/ecs/aws//modules/service"
 
@@ -36,6 +52,17 @@ module "track_metadata_processing_task_definition" {
         {
           name  = "KAFKA_TRACK_PROCESSING_EVENTS_TOPIC"
           value = "ufb.track_processing_events"
+        },
+        {
+          name  = "SENTRY_ENVIRONMENT"
+          value = terraform.workspace
+        },
+      ]
+
+      secrets = [
+        {
+          name      = "SENTRY_DSN"
+          valueFrom = "${aws_secretsmanager_secret.sentry.arn}:SENTRY_DSN::"
         },
       ]
 

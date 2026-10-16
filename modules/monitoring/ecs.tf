@@ -47,6 +47,16 @@ module "monitoring_service" {
             metrics_path: /metrics
             static_configs:
               - targets: ['airflow-statsd:9102']
+
+          - job_name: temporal-worker
+            metrics_path: /metrics
+            static_configs:
+              - targets: ['temporal-worker-metrics:9090']
+
+          - job_name: kafka-connect
+            metrics_path: /metrics
+            static_configs:
+              - targets: ['kafka-connect-metrics:9404']
         %{if var.kafka_admin_target != null}
           - job_name: kafka
             metrics_path: /public_metrics
@@ -87,14 +97,62 @@ module "monitoring_service" {
       enable_cloudwatch_logging = true
     }
 
+    # Dashboard JSON lives in S3 (modules/monitoring/s3.tf) rather than inline
+    # in Grafana's own command below: six dashboards' worth of panel JSON
+    # pushed the whole task definition past ECS's 64KB hard limit. This
+    # sidecar pulls them onto the shared "grafana-dashboards" volume before
+    # Grafana starts — same config-writer-sidecar pattern
+    # modules/kafka-connect uses for connector configs.
+    dashboard-sync = {
+      cpu                    = 0
+      memory                 = 128
+      essential              = false
+      image                  = "public.ecr.aws/aws-cli/aws-cli:latest"
+      user                   = "0"
+      readonlyRootFilesystem = false
+      entrypoint             = ["/bin/sh", "-ec"]
+      command = [<<-EOT
+        aws s3 sync s3://${aws_s3_bucket.grafana_dashboards.id}/dashboards/ /etc/grafana/provisioning/dashboards/ --region eu-west-2
+
+        cat <<'EOF' >/etc/grafana/provisioning/dashboards/dashboards.yml
+        apiVersion: 1
+        providers:
+          - name: default
+            folder: ""
+            type: file
+            options:
+              path: /etc/grafana/provisioning/dashboards
+        EOF
+      EOT
+      ]
+
+      mountPoints = [
+        {
+          sourceVolume  = "grafana-dashboards"
+          containerPath = "/etc/grafana/provisioning/dashboards"
+          readOnly      = false
+        }
+      ]
+
+      enable_cloudwatch_logging = true
+    }
+
     grafana = {
       memory                 = 1024
       image                  = "grafana/grafana-oss:11.4.0"
       essential              = true
       readonlyRootFilesystem = false
       entrypoint             = ["/bin/sh", "-ec"]
+
+      dependsOn = [
+        {
+          containerName = "dashboard-sync"
+          condition     = "SUCCESS"
+        }
+      ]
+
       command = [<<-EOT
-        mkdir -p /etc/grafana/provisioning/datasources /etc/grafana/provisioning/dashboards
+        mkdir -p /etc/grafana/provisioning/datasources
 
         cat <<'EOF' >/etc/grafana/provisioning/datasources/datasources.yml
         apiVersion: 1
@@ -122,20 +180,6 @@ module "monitoring_service" {
             editable: false
         EOF
 
-        cat <<'EOF' >/etc/grafana/provisioning/dashboards/dashboards.yml
-        apiVersion: 1
-        providers:
-          - name: default
-            folder: ""
-            type: file
-            options:
-              path: /etc/grafana/provisioning/dashboards
-        EOF
-
-        cat <<'EOF' >/etc/grafana/provisioning/dashboards/stripe-webhook-dlq.json
-        ${var.stripe_webhook_dlq_dashboard_json}
-        EOF
-
         exec /run.sh
       EOT
       ]
@@ -152,6 +196,15 @@ module "monitoring_service" {
           sourceVolume  = "grafana-data"
           containerPath = "/var/lib/grafana"
           readOnly      = false
+        },
+        {
+          # Read-only: dashboard-sync (running as root) populates both the
+          # dashboard JSON and dashboards.yml here before Grafana starts
+          # (dependsOn SUCCESS above) — Grafana, running as its image's
+          # non-root default user, only ever reads from this volume.
+          sourceVolume  = "grafana-dashboards"
+          containerPath = "/etc/grafana/provisioning/dashboards"
+          readOnly      = true
         }
       ]
       enable_cloudwatch_logging = true
@@ -293,12 +346,17 @@ module "monitoring_service" {
         }
       }
     }
+    # Plain task-local scratch space, not EFS: dashboard-sync repopulates it
+    # from S3 on every task start, so nothing needs to persist across
+    # deployments.
+    "grafana-dashboards" = {}
   }
 
   tasks_iam_role_policies = {
-    TempoS3Access        = aws_iam_policy.tempo_s3_access.arn
-    EfsAccess            = aws_iam_policy.efs_access.arn
-    CloudwatchReadAccess = aws_iam_policy.cloudwatch_read.arn
+    TempoS3Access             = aws_iam_policy.tempo_s3_access.arn
+    EfsAccess                 = aws_iam_policy.efs_access.arn
+    CloudwatchReadAccess      = aws_iam_policy.cloudwatch_read.arn
+    GrafanaDashboardsS3Access = aws_iam_policy.grafana_dashboards_s3_access.arn
   }
 
   tags = var.tags

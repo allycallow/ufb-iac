@@ -133,6 +133,19 @@ module "kafka_connect_task_definition" {
         {
           name  = "KAFKA_HEAP_OPTS"
           value = "-Xms128M -Xmx512M"
+        },
+        {
+          # jmx_prometheus_javaagent, baked into the image at
+          # /opt/jmx-exporter (see ufb-kafka-connect's Dockerfile). Verified
+          # end-to-end against a real broker: with no custom `rules:`, the
+          # default conversion exposes kafka.connect's MBeans as e.g.
+          # kafka_connect_connector_task_metrics_running_ratio{connector,task}
+          # and kafka_connect_task_error_metrics_total_record_errors{connector,task}.
+          # Per-connector "status" is a String JMX attribute, which
+          # jmx_exporter never converts to a metric — running_ratio (1.0 while
+          # RUNNING) is the closest numeric proxy for connector/task health.
+          name  = "KAFKA_OPTS"
+          value = "-javaagent:/opt/jmx-exporter/jmx_prometheus_javaagent.jar=${var.metrics_port}:/opt/jmx-exporter/kafka-connect.yml"
         }
       ]
 
@@ -149,6 +162,12 @@ module "kafka_connect_task_definition" {
           name          = "kafka-connect-rest"
           containerPort = 8083
           hostPort      = 8083
+          protocol      = "tcp"
+        },
+        {
+          name          = "kafka-connect-metrics"
+          containerPort = var.metrics_port
+          hostPort      = var.metrics_port
           protocol      = "tcp"
         }
       ]
@@ -207,6 +226,14 @@ module "kafka_connect_task_definition" {
           dns_name = "kafka-connect"
           port     = 8083
         }
+      },
+      {
+        port_name      = "kafka-connect-metrics"
+        discovery_name = "kafka-connect-metrics-sc"
+        client_alias = {
+          dns_name = "kafka-connect-metrics"
+          port     = var.metrics_port
+        }
       }
     ]
   }
@@ -219,6 +246,15 @@ module "kafka_connect_task_definition" {
       protocol                     = "tcp"
       description                  = "Allow Connect REST API access from Teleport"
       referenced_security_group_id = var.teleport_security_group_id
+    }
+
+    monitoring_ingress_metrics = {
+      type                         = "ingress"
+      from_port                    = var.metrics_port
+      to_port                      = var.metrics_port
+      protocol                     = "tcp"
+      description                  = "Prometheus scrape of the jmx_prometheus_javaagent metrics endpoint"
+      referenced_security_group_id = var.monitoring_security_group_id
     }
   }
 

@@ -61,3 +61,33 @@ variable "stripe_webhook_dlq_dashboard_json" {
   description = "Raw JSON content of the Stripe webhook DLQ Grafana dashboard, provisioned into Grafana on container start"
   type        = string
 }
+
+variable "recommendations_dashboard_json" {
+  description = "Raw JSON content of the Recommendations service Grafana dashboard, provisioned into Grafana on container start"
+  type        = string
+}
+
+variable "search_dashboard_json" {
+  description = "Raw JSON content of the Search service Grafana dashboard, provisioned into Grafana on container start"
+  type        = string
+}
+
+variable "airflow_dashboard_json" {
+  description = "Raw JSON content of the Airflow Grafana dashboard, provisioned into Grafana on container start"
+  type        = string
+}
+
+variable "backend_dashboard_json" {
+  description = "Raw JSON content of the Backend service Grafana dashboard, provisioned into Grafana on container start"
+  type        = string
+}
+
+variable "temporal_worker_dashboard_json" {
+  description = "Raw JSON content of the Temporal worker Grafana dashboard, provisioned into Grafana on container start"
+  type        = string
+}
+
+variable "kafka_connect_dashboard_json" {
+  description = "Raw JSON content of the Kafka Connect Grafana dashboard, provisioned into Grafana on container start"
+  type        = string
+}

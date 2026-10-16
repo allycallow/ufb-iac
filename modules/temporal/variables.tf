@@ -594,3 +594,9 @@ variable "metrics_client_security_group_ids" {
   type        = list(string)
   default     = []
 }
+
+variable "worker_metrics_port" {
+  description = "Container port the Python worker's SDK-core Prometheus endpoint (PrometheusConfig.bind_address) listens on."
+  type        = number
+  default     = 9090
+}

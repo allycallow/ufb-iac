@@ -44,6 +44,32 @@ resource "aws_iam_policy" "cloudwatch_read" {
   })
 }
 
+resource "aws_iam_policy" "grafana_dashboards_s3_access" {
+  name        = "${var.name}-GrafanaDashboardsS3AccessPolicy"
+  description = "Allows the dashboard-sync sidecar to pull dashboard JSON onto Grafana's shared volume"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:ListBucket",
+          "s3:GetBucketLocation"
+        ]
+        Resource = [aws_s3_bucket.grafana_dashboards.arn]
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject"
+        ]
+        Resource = ["${aws_s3_bucket.grafana_dashboards.arn}/*"]
+      }
+    ]
+  })
+}
+
 resource "aws_iam_policy" "tempo_s3_access" {
   name        = "TempoS3AccessPolicy"
   description = "Allows Grafana Tempo on ECS to manage its storage bucket"

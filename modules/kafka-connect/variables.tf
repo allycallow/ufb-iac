@@ -63,6 +63,17 @@ variable "teleport_security_group_id" {
   type        = string
 }
 
+variable "monitoring_security_group_id" {
+  description = "Security group of the monitoring service, allowed to scrape the jmx_prometheus_javaagent metrics port"
+  type        = string
+}
+
+variable "metrics_port" {
+  description = "Port jmx_prometheus_javaagent's own HTTP server listens on (set via the KAFKA_OPTS -javaagent flag)"
+  type        = number
+  default     = 9404
+}
+
 variable "cpu" {
   type    = number
   default = 1024

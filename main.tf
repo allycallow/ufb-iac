@@ -338,19 +338,20 @@ module "kafka_connect" {
     Workflow    = "kafka-connect"
   }
 
-  vpc_id                     = module.networking.vpc_id
-  private_subnets            = module.networking.private_subnets
-  ecs_cluster_arn            = module.ecs_cluster.cluster_arn
-  service_connect_namespace  = module.ecs_cluster.service_discovery_namespace_name
-  task_exec_policy_arn       = module.ecs_cluster.task_exec_policy_arn
-  image_uri                  = "${module.container_registry.repository_urls["kafka-connect"]}:latest"
-  opensearch_domain_arn      = module.search.opensearch_domain_arn
-  audio_upload_queue_arn     = module.audio_processing.queue_arn
-  ddex_delivery_queue_arn    = module.ddex_delivery.queue_arn
-  debezium_secret_arn        = module.database.debezium_secret_arn
-  db_host                    = module.database.db_instance_host
-  db_name                    = "ufb"
-  teleport_security_group_id = module.teleport.security_group_id
+  vpc_id                       = module.networking.vpc_id
+  private_subnets              = module.networking.private_subnets
+  ecs_cluster_arn              = module.ecs_cluster.cluster_arn
+  service_connect_namespace    = module.ecs_cluster.service_discovery_namespace_name
+  task_exec_policy_arn         = module.ecs_cluster.task_exec_policy_arn
+  image_uri                    = "${module.container_registry.repository_urls["kafka-connect"]}:latest"
+  opensearch_domain_arn        = module.search.opensearch_domain_arn
+  audio_upload_queue_arn       = module.audio_processing.queue_arn
+  ddex_delivery_queue_arn      = module.ddex_delivery.queue_arn
+  debezium_secret_arn          = module.database.debezium_secret_arn
+  db_host                      = module.database.db_instance_host
+  db_name                      = "ufb"
+  teleport_security_group_id   = module.teleport.security_group_id
+  monitoring_security_group_id = module.monitoring.security_group_id
 }
 
 module "teleport" {
@@ -405,6 +406,7 @@ module "track_metadata_processing" {
   image_uri               = "${module.container_registry.repository_urls["track-metadata"]}:${local.deployed_image_tags["track-metadata"]}"
   private_subnets         = module.networking.private_subnets
   kafka_bootstrap_servers = module.kafka.broker_dns_endpoint
+  sentry_dsn              = var.track_metadata_sentry_dsn
 }
 
 module "recommendations" {
@@ -493,6 +495,12 @@ module "monitoring" {
   ]
 
   stripe_webhook_dlq_dashboard_json = file("${path.module}/modules/stripe-webhook-dlq/dashboard.json")
+  recommendations_dashboard_json    = file("${path.module}/modules/monitoring/recommendations.json")
+  search_dashboard_json             = file("${path.module}/modules/monitoring/search.json")
+  airflow_dashboard_json            = file("${path.module}/modules/monitoring/airflow.json")
+  backend_dashboard_json            = file("${path.module}/modules/monitoring/backend.json")
+  temporal_worker_dashboard_json    = file("${path.module}/modules/monitoring/temporal-worker.json")
+  kafka_connect_dashboard_json      = file("${path.module}/modules/monitoring/kafka-connect.json")
 }
 
 module "frontend" {
@@ -597,6 +605,23 @@ module "unleash" {
   db_master_secret_arn = module.database.db_instance_master_user_secret_arn
 }
 
+# Dedicated Sentry project for the worker, separate from the shared
+# prod/ufb/backend one backend/recommendations/search use — same
+# Terraform-managed pattern as modules/track-metadata's own secret.
+resource "aws_secretsmanager_secret" "temporal_worker_sentry" {
+  name = "${local.name}-temporal-worker-sentry"
+  tags = {
+    Environment = terraform.workspace
+    Name        = local.name
+    Workflow    = "temporal"
+  }
+}
+
+resource "aws_secretsmanager_secret_version" "temporal_worker_sentry" {
+  secret_id     = aws_secretsmanager_secret.temporal_worker_sentry.id
+  secret_string = jsonencode({ SENTRY_DSN = var.temporal_worker_sentry_dsn })
+}
+
 module "temporal" {
   source = "./modules/temporal"
 
@@ -678,8 +703,9 @@ module "temporal" {
 
   worker_secrets = {
     BACKEND_API_KEY = "${local.secret_prefix}:API_KEY::"
+    SENTRY_DSN      = "${aws_secretsmanager_secret.temporal_worker_sentry.arn}:SENTRY_DSN::"
   }
-  worker_secret_arns = [local.secret_prefix]
+  worker_secret_arns = [local.secret_prefix, aws_secretsmanager_secret.temporal_worker_sentry.arn]
 
   worker_task_role_statements = [
     {

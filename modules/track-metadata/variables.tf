@@ -38,3 +38,10 @@ variable "kafka_bootstrap_servers" {
   description = "Kafka broker address reachable over normal VPC DNS (this task runs standalone via RunTask, so it gets no Service Connect proxy and can't use the `kafka` short name)"
   type        = string
 }
+
+variable "sentry_dsn" {
+  description = "Sentry DSN for error reporting. Empty string leaves error reporting disabled until populated."
+  type        = string
+  default     = ""
+  sensitive   = true
+}

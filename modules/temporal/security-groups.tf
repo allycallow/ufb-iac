@@ -149,13 +149,18 @@ resource "aws_vpc_security_group_egress_rule" "ui_all" {
 
 # ── Python worker ─────────────────────────────────────────────────────────────
 #
-# Egress-only by design. The worker dials out to the frontend and long-polls;
-# nothing ever connects to it. The :8080 health endpoint is served in-process and
-# probed over the loopback interface by the container health check, which shares
-# the task's network namespace and so needs no security group rule at all.
+# Mostly egress-only. The worker dials out to the frontend and long-polls;
+# nothing connects to it except Prometheus, scraping the metrics port below. The
+# :8080 health endpoint is served in-process and probed over the loopback
+# interface by the container health check, which shares the task's network
+# namespace and so needs no security group rule at all.
 
 resource "aws_security_group" "worker" {
-  name        = "${var.name}-worker"
+  name = "${var.name}-worker"
+  # Left as the original text: `description` is immutable on aws_security_group
+  # in AWS's API, so editing it here would force a replacement (and every
+  # downstream rule that references this SG by id to be re-pointed) for a
+  # purely cosmetic change. See the comment above for what's actually true now.
   description = "Temporal Python worker fleet (egress only)"
   vpc_id      = var.vpc_id
 
@@ -164,6 +169,17 @@ resource "aws_security_group" "worker" {
   lifecycle {
     create_before_destroy = true
   }
+}
+
+resource "aws_vpc_security_group_ingress_rule" "worker_metrics_from_clients" {
+  for_each = { for idx, sg in var.metrics_client_security_group_ids : tostring(idx) => sg }
+
+  security_group_id            = aws_security_group.worker.id
+  referenced_security_group_id = each.value
+  ip_protocol                  = "tcp"
+  from_port                    = var.worker_metrics_port
+  to_port                      = var.worker_metrics_port
+  description                  = "Prometheus scrape of the worker SDK-core metrics endpoint"
 }
 
 resource "aws_vpc_security_group_egress_rule" "worker_all" {

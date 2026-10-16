@@ -18,12 +18,15 @@ locals {
       TEMPORAL_TASK_QUEUE = var.worker_task_queue
 
       WORKER_HEALTH_PORT            = tostring(var.worker_health_port)
+      WORKER_METRICS_PORT           = tostring(var.worker_metrics_port)
       MAX_CONCURRENT_ACTIVITIES     = tostring(var.worker_max_concurrent_activities)
       MAX_CONCURRENT_WORKFLOW_TASKS = tostring(var.worker_max_concurrent_workflow_tasks)
 
       # Fargate Spot gives ~120s of notice; graceful_shutdown must finish inside
       # the container stopTimeout below.
       WORKER_GRACEFUL_SHUTDOWN_SECONDS = "90"
+
+      SENTRY_ENVIRONMENT = terraform.workspace
     },
     var.worker_environment,
   )
@@ -99,6 +102,19 @@ module "worker" {
 
       readonlyRootFilesystem = var.worker_readonly_root_filesystem
 
+      # Served on all interfaces (unlike the loopback-only health port): the
+      # worker's SDK-core Prometheus endpoint is scraped from outside the task,
+      # over Service Connect. See the "metrics" ingress rule in
+      # security-groups.tf and the "metrics" service_connect service below.
+      portMappings = [
+        {
+          name          = "metrics"
+          containerPort = var.worker_metrics_port
+          hostPort      = var.worker_metrics_port
+          protocol      = "tcp"
+        }
+      ]
+
       environment = [
         for k in sort(keys(local.worker_environment)) : {
           name  = k
@@ -137,13 +153,24 @@ module "worker" {
   create_security_group = false
   security_group_ids    = [aws_security_group.worker.id]
 
-  # Client-only Service Connect: no `service` block, so the worker publishes
-  # nothing of its own. It only needs this to resolve other Service
+  # Mostly client-only Service Connect — it resolves other Service
   # Connect-enabled dependencies (e.g. `kafka:9092`) by short name through the
-  # sidecar proxy — the same reason modules/backend enables it.
+  # sidecar proxy, the same reason modules/backend enables it. The one thing it
+  # publishes is the metrics port, so Prometheus can reach a worker task by the
+  # stable `temporal-worker-metrics` alias instead of a short-lived task IP.
   service_connect_configuration = {
     enabled   = true
     namespace = var.service_discovery_namespace_name
+    service = [
+      {
+        port_name      = "metrics"
+        discovery_name = "temporal-worker-metrics-sc"
+        client_alias = {
+          dns_name = "temporal-worker-metrics"
+          port     = var.worker_metrics_port
+        }
+      }
+    ]
   }
 
   create_task_exec_iam_role = true
