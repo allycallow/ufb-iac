@@ -266,8 +266,13 @@ module "backend_task_definition" {
       resources = [var.event_bus_arn]
     },
     {
+      # GetObject added alongside the existing PutObject so
+      # ddex_deliveries.py:_set_cover_art can download a release's cover
+      # art back out of the staging prefix ufb-ddex-ingest copies it into
+      # (see modules/ddex-delivery) before writing it onto Release.artwork.
       actions = [
-        "s3:PutObject"
+        "s3:PutObject",
+        "s3:GetObject"
       ]
       effect = "Allow"
       resources = [

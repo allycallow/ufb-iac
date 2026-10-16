@@ -60,3 +60,13 @@ variable "stale_delivery_retention_days" {
   type        = number
   default     = 90
 }
+
+variable "media_bucket_name" {
+  description = "Name of the media bucket CloudFront serves from - ddex-ingest stages a release's cover art there (under a disposable prefix) since the backend already has read/write access to it, avoiding any need to widen this module's own KMS-restricted bucket to a new principal."
+  type        = string
+}
+
+variable "media_bucket_arn" {
+  description = "ARN of the media bucket, for the staging IAM grant"
+  type        = string
+}

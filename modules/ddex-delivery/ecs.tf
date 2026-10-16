@@ -45,6 +45,10 @@ module "ddex_ingest_task_definition" {
           name  = "DDEX_DELIVERIES_BUCKET"
           value = aws_s3_bucket.deliveries.id
         },
+        {
+          name  = "MEDIA_BUCKET"
+          value = var.media_bucket_name
+        },
       ]
 
       secrets = [
@@ -96,6 +100,18 @@ module "ddex_ingest_task_definition" {
         "events:PutEvents",
       ]
       resources = [var.event_bus_arn]
+    },
+    {
+      # Stages a release's cover art into the media bucket under a
+      # disposable prefix - see mapping.py/task.py in ufb-ddex-ingest and
+      # ddex_deliveries.py:_set_cover_art in ufb/backend. Scoped to that
+      # one prefix, not the whole bucket - this task has no reason to
+      # touch anything else there.
+      effect = "Allow"
+      actions = [
+        "s3:PutObject",
+      ]
+      resources = ["${var.media_bucket_arn}/pending-ddex-covers/*"]
     }
   ]
 

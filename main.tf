@@ -267,6 +267,9 @@ module "ddex_delivery" {
 
   audio_processing_task_role_arn = module.audio_processing.task_role_arn
   track_metadata_task_role_arn   = module.track_metadata_processing.task_role_arn
+
+  media_bucket_name = module.storage.media_bucket_name
+  media_bucket_arn  = module.storage.media_bucket_arn
 }
 
 module "search" {
