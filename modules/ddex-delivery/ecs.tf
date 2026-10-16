@@ -47,8 +47,12 @@ module "ddex_ingest_task_definition" {
         },
       ]
 
-      # No secrets wired up yet (e.g. SENTRY_DSN) - add a `secrets` block here
-      # once a prod/ufb/ddex-ingest secret exists in Secrets Manager.
+      secrets = [
+        {
+          name      = "SENTRY_DSN"
+          valueFrom = "arn:aws:secretsmanager:eu-west-2:${data.aws_caller_identity.current.account_id}:secret:prod/ufb/ddex-ingest-yTHLep:SENTRY_DSN::"
+        },
+      ]
 
       logConfiguration = {
         logDriver = "awslogs"
