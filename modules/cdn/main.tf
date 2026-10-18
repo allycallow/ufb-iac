@@ -72,6 +72,20 @@ resource "aws_cloudfront_key_group" "cf_preview_keygroup" {
   name  = "${random_id.media_id.hex}-preview-group"
 }
 
+# Separate trust tier for download assets. These objects are already
+# AES-encrypted before upload (see ufb-audio-processing's
+# encrypt_download_asset), so this signature only controls who can fetch the
+# ciphertext at all - it is not the thing standing between a leaked URL and
+# playable audio.
+resource "aws_cloudfront_public_key" "cf_download_key" {
+  encoded_key = var.download_public_key_pem
+}
+
+resource "aws_cloudfront_key_group" "cf_download_keygroup" {
+  items = [aws_cloudfront_public_key.cf_download_key.id]
+  name  = "${random_id.media_id.hex}-download-group"
+}
+
 resource "aws_cloudfront_cache_policy" "audio_segments" {
   name    = "${terraform.workspace}-audio-segments-no-cache"
   comment = "Zero-TTL for encrypted CMAF segments. Prevents 304s that break DRM session decryption."
@@ -215,6 +229,23 @@ resource "aws_cloudfront_distribution" "media" {
     compress                   = true
     viewer_protocol_policy     = "redirect-to-https"
     trusted_key_groups         = [aws_cloudfront_key_group.cf_preview_keygroup.id]
+    origin_request_policy_id   = data.aws_cloudfront_origin_request_policy.this.id
+    cache_policy_id            = data.aws_cloudfront_cache_policy.this.id
+    response_headers_policy_id = aws_cloudfront_response_headers_policy.custom.id
+  }
+
+  # Offline download assets — a single opaque, already-AES-encrypted file per
+  # track (no manifest, no segments, nothing to cache-bust), so this can use
+  # a normal cache policy unlike the zero-TTL /audio/* behavior below. Must
+  # precede /audio/* since CloudFront matches path patterns in list order.
+  ordered_cache_behavior {
+    path_pattern               = "/audio/*/download.enc"
+    allowed_methods            = ["GET", "HEAD", "OPTIONS"]
+    cached_methods             = ["GET", "HEAD", "OPTIONS"]
+    target_origin_id           = var.media_bucket_id
+    compress                   = false
+    viewer_protocol_policy     = "redirect-to-https"
+    trusted_key_groups         = [aws_cloudfront_key_group.cf_download_keygroup.id]
     origin_request_policy_id   = data.aws_cloudfront_origin_request_policy.this.id
     cache_policy_id            = data.aws_cloudfront_cache_policy.this.id
     response_headers_policy_id = aws_cloudfront_response_headers_policy.custom.id

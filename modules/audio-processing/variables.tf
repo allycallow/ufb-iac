@@ -43,3 +43,8 @@ variable "kafka_bootstrap_servers" {
   description = "Kafka broker address reachable over normal VPC DNS (this task runs standalone via RunTask, so it gets no Service Connect proxy and can't use the `kafka` short name)"
   type        = string
 }
+
+variable "download_content_keys_kms_key_arn" {
+  description = "ARN of the KMS key that wraps per-track AES content keys for offline download assets - this task is granted kms:Encrypt on it"
+  type        = string
+}

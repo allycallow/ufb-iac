@@ -6,6 +6,10 @@ output "cf_preview_key_id" {
   value = aws_cloudfront_public_key.cf_preview_key.id
 }
 
+output "cf_download_key_id" {
+  value = aws_cloudfront_public_key.cf_download_key.id
+}
+
 output "cf_media_keygroup_id" {
   value = aws_cloudfront_key_group.cf_media_keygroup.id
 }

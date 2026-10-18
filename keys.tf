@@ -8,3 +8,12 @@ resource "tls_private_key" "media" {
 resource "tls_private_key" "preview_media" {
   algorithm = "RSA"
 }
+
+# Signs download-tier CDN URLs. Kept separate from the other two tiers for the
+# same reason - but note this key only gates who can fetch the ciphertext
+# object at all; the real access control for offline downloads is the
+# separately-issued AES decryption key (see GetDownloadAccess / kms.tf), not
+# this CloudFront signature.
+resource "tls_private_key" "download_media" {
+  algorithm = "RSA"
+}

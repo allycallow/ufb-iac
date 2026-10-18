@@ -165,6 +165,7 @@ module "cdn" {
   alb_dns_name                     = module.alb.dns_name
   media_public_key_pem             = tls_private_key.media.public_key_pem
   preview_public_key_pem           = tls_private_key.preview_media.public_key_pem
+  download_public_key_pem          = tls_private_key.download_media.public_key_pem
   viewer_response_lambda_arn       = var.viewer_response_lambda_arn
   viewer_request_lambda_arn        = var.viewer_request_lambda_arn
   origin_response_lambda_arn       = var.origin_response_lambda_arn
@@ -238,13 +239,14 @@ module "audio_processing" {
     Workflow    = "audio-processing"
   }
 
-  media_bucket_arn        = module.storage.media_bucket_arn
-  media_bucket_id         = module.storage.media_bucket_id
-  ecs_cluster_arn         = module.ecs_cluster.cluster_arn
-  image_uri               = "${module.container_registry.repository_urls["audio-processing"]}:${local.deployed_image_tags["audio-processing"]}"
-  private_subnets         = module.networking.private_subnets
-  event_bus_arn           = module.eventbridge.eventbridge_bus_arn
-  kafka_bootstrap_servers = module.kafka.broker_dns_endpoint
+  media_bucket_arn                  = module.storage.media_bucket_arn
+  media_bucket_id                   = module.storage.media_bucket_id
+  ecs_cluster_arn                   = module.ecs_cluster.cluster_arn
+  image_uri                         = "${module.container_registry.repository_urls["audio-processing"]}:${local.deployed_image_tags["audio-processing"]}"
+  private_subnets                   = module.networking.private_subnets
+  event_bus_arn                     = module.eventbridge.eventbridge_bus_arn
+  kafka_bootstrap_servers           = module.kafka.broker_dns_endpoint
+  download_content_keys_kms_key_arn = aws_kms_key.download_content_keys.arn
 }
 
 module "ddex_delivery" {
@@ -560,18 +562,21 @@ module "backend" {
   # cognitojwt accepts a comma-separated APP_CLIENT_ID; both clients must be allowed since
   # the web app and mobile app authenticate against the same Cognito user pool but different
   # app clients (see modules/auth/main.tf).
-  cognito_app_client_id = "${module.auth.user_pool_web_client_id},${module.auth.user_pool_mobile_client_id}"
-  cognito_user_pool_arn = module.auth.user_pool_arn
-  cf_media_key_id       = module.cdn.cf_media_key_id
-  cf_preview_key_id     = module.cdn.cf_preview_key_id
-  event_bus_name        = module.eventbridge.eventbridge_bus_name
-  event_bus_arn         = module.eventbridge.eventbridge_bus_arn
-  stripe_event_bus_name = var.stripe_event_bus_name
-  redis_host            = module.database.redis_host
-  secret_prefix         = local.secret_prefix
-  task_exec_policy_arn  = module.ecs_cluster.task_exec_policy_arn
-  schema_registry_arn   = module.schema_registry.registry_arn
-  schema_registry_name  = module.schema_registry.registry_name
+  cognito_app_client_id             = "${module.auth.user_pool_web_client_id},${module.auth.user_pool_mobile_client_id}"
+  cognito_user_pool_arn             = module.auth.user_pool_arn
+  cf_media_key_id                   = module.cdn.cf_media_key_id
+  cf_preview_key_id                 = module.cdn.cf_preview_key_id
+  cf_download_key_id                = module.cdn.cf_download_key_id
+  download_content_keys_kms_key_arn = aws_kms_key.download_content_keys.arn
+  cognito_mobile_app_client_id      = module.auth.user_pool_mobile_client_id
+  event_bus_name                    = module.eventbridge.eventbridge_bus_name
+  event_bus_arn                     = module.eventbridge.eventbridge_bus_arn
+  stripe_event_bus_name             = var.stripe_event_bus_name
+  redis_host                        = module.database.redis_host
+  secret_prefix                     = local.secret_prefix
+  task_exec_policy_arn              = module.ecs_cluster.task_exec_policy_arn
+  schema_registry_arn               = module.schema_registry.registry_arn
+  schema_registry_name              = module.schema_registry.registry_name
 }
 
 module "unleash" {

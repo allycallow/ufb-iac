@@ -89,6 +89,18 @@ module "backend_task_definition" {
           "value" : var.cf_preview_key_id
         },
         {
+          "name" : "CF_DOWNLOAD_KEY_ID",
+          "value" : var.cf_download_key_id
+        },
+        {
+          "name" : "DOWNLOAD_CONTENT_KEYS_KMS_KEY_ID",
+          "value" : var.download_content_keys_kms_key_arn
+        },
+        {
+          "name" : "COGNITO_MOBILE_APP_CLIENT_ID",
+          "value" : var.cognito_mobile_app_client_id
+        },
+        {
           "name" : "EVENT_BUS_NAME",
           "value" : var.event_bus_name
         },
@@ -166,6 +178,10 @@ module "backend_task_definition" {
         {
           "name" : "PREVIEW_PRIVATE_KEY_VALUE",
           "valueFrom" : "${var.secret_prefix}:preview_private_key::"
+        },
+        {
+          "name" : "DOWNLOAD_PRIVATE_KEY_VALUE",
+          "valueFrom" : "${var.secret_prefix}:download_private_key::"
         },
         {
           "name" : "STRIPE_API_KEY",
@@ -312,6 +328,13 @@ module "backend_task_definition" {
         var.schema_registry_arn,
         "arn:aws:glue:eu-west-2:${data.aws_caller_identity.current.account_id}:schema/${var.schema_registry_name}/*"
       ]
+    },
+    {
+      # Only used inside GetDownloadAccess, to hand a per-track AES key to an
+      # already-authorized native, subscribed client.
+      actions   = ["kms:Decrypt", "kms:DescribeKey"]
+      effect    = "Allow"
+      resources = [var.download_content_keys_kms_key_arn]
     }
   ]
 

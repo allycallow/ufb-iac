@@ -83,6 +83,21 @@ variable "cf_preview_key_id" {
   type        = string
 }
 
+variable "cf_download_key_id" {
+  description = "ID of the CloudFront public key for download (auth-only) signing"
+  type        = string
+}
+
+variable "download_content_keys_kms_key_arn" {
+  description = "ARN of the KMS key that wraps per-track AES content keys for offline download assets - this service is granted kms:Decrypt on it, used only inside GetDownloadAccess"
+  type        = string
+}
+
+variable "cognito_mobile_app_client_id" {
+  description = "Cognito app client ID the native mobile app authenticates against (distinct from the web client) - used to confirm a GetDownloadAccess caller is the native app, not the web frontend"
+  type        = string
+}
+
 variable "event_bus_name" {
   description = "Name of the EventBridge event bus"
   type        = string

@@ -53,6 +53,10 @@ module "audio_processing_task_definition" {
           name  = "KAFKA_TRACK_PROCESSING_EVENTS_TOPIC"
           value = "ufb.track_processing_events"
         },
+        {
+          name  = "DOWNLOAD_CONTENT_KEYS_KMS_KEY_ID"
+          value = var.download_content_keys_kms_key_arn
+        },
       ]
 
       secrets = [
@@ -110,6 +114,14 @@ module "audio_processing_task_definition" {
         "events:PutEvents",
       ]
       resources = [var.event_bus_arn]
+    },
+    {
+      effect = "Allow"
+      actions = [
+        "kms:Encrypt",
+        "kms:DescribeKey",
+      ]
+      resources = [var.download_content_keys_kms_key_arn]
     }
   ]
 
