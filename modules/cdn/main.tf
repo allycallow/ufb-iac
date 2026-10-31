@@ -120,6 +120,38 @@ resource "aws_cloudfront_cache_policy" "audio_segments" {
   }
 }
 
+# The live manifest rewrites on every segment rotation, so it can never be
+# cached - a stale manifest hands listeners segment URIs that have already
+# aged out of the live window. Segments themselves don't need a dedicated
+# policy: each filename is unique (see modules/radio), so the standard
+# Managed-CachingOptimized policy used elsewhere in this file already does
+# the right thing for them.
+resource "aws_cloudfront_cache_policy" "radio_manifest" {
+  name    = "${terraform.workspace}-radio-manifest-no-cache"
+  comment = "Zero-TTL for the live radio HLS manifest."
+
+  default_ttl = 0
+  min_ttl     = 0
+  max_ttl     = 0
+
+  parameters_in_cache_key_and_forwarded_to_origin {
+    enable_accept_encoding_brotli = false
+    enable_accept_encoding_gzip   = false
+
+    cookies_config {
+      cookie_behavior = "none"
+    }
+
+    headers_config {
+      header_behavior = "none"
+    }
+
+    query_strings_config {
+      query_string_behavior = "none"
+    }
+  }
+}
+
 resource "aws_cloudfront_cache_policy" "images_immutable" {
   name    = "${terraform.workspace}-images-immutable"
   comment = "Long TTL for resized image derivatives - key encodes width/format/quality so bytes never change once generated."
@@ -210,12 +242,15 @@ resource "aws_cloudfront_distribution" "media" {
     cached_methods           = ["GET", "HEAD"]
     target_origin_id         = var.media_bucket_id
     viewer_protocol_policy   = "redirect-to-https"
-    min_ttl                  = 0
-    default_ttl              = terraform.workspace == "dev" ? 0 : 604800
-    max_ttl                  = terraform.workspace == "dev" ? 0 : 31536000
     compress                 = true
     origin_request_policy_id = data.aws_cloudfront_origin_request_policy.this.id
-    cache_policy_id          = data.aws_cloudfront_cache_policy.this.id
+    # No inline TTL fields (conflict with cache_policy_id, same as /audio/*
+    # below) - CloudFront silently ignores min/default/max_ttl whenever a
+    # cache_policy_id is also set, so Managed-CachingOptimized's own TTLs
+    # (1 day default) are what's actually governed this behavior all along.
+    # The previous 604800/31536000 values here were dead code that only
+    # produced a perpetual, unfixable plan diff.
+    cache_policy_id = data.aws_cloudfront_cache_policy.this.id
   }
 
   # Audio previews — requires an authenticated-tier signed cookie (cf_preview_keygroup).
@@ -322,9 +357,47 @@ resource "aws_cloudfront_distribution" "media" {
     allowed_methods          = ["GET", "HEAD", "OPTIONS"]
     cached_methods           = ["GET", "HEAD", "OPTIONS"]
     target_origin_id         = var.media_bucket_id
-    min_ttl                  = 0
-    default_ttl              = 3600
-    max_ttl                  = 86400
+    compress                 = true
+    viewer_protocol_policy   = "redirect-to-https"
+    origin_request_policy_id = data.aws_cloudfront_origin_request_policy.this.id
+    # No inline TTL fields - see default_cache_behavior above for why
+    # (cache_policy_id already governs this; the previous 3600/86400 here
+    # were dead code CloudFront silently ignored).
+    cache_policy_id = data.aws_cloudfront_cache_policy.this.id
+  }
+
+  # Live radio manifests - public, unauthenticated, zero-TTL. Liquidsoap's
+  # HLS output writes two: the master playlist (fixed name "playlist.m3u8")
+  # and a per-stream variant playlist ("radio.m3u8", named after the stream
+  # id in modules/radio) that actually lists the live segment window and
+  # rewrites on every rotation - caching that one even briefly hands
+  # listeners a stale segment list and stalls playback once they've worked
+  # through it. The wildcard catches both. Must precede the /radio/*
+  # segment behavior below since CloudFront matches path patterns in list
+  # order and this is the more specific pattern. Appended last (rather than
+  # wherever alongside the other /audio|images|static behaviors above) so
+  # this addition doesn't shift any existing ordered_cache_behavior's list
+  # position - CloudFront's provider diffs this list positionally, and an
+  # unrelated position shift reads as those existing behaviors
+  # changing/losing their lambda associations.
+  ordered_cache_behavior {
+    path_pattern           = "/radio/live/*.m3u8"
+    allowed_methods        = ["GET", "HEAD", "OPTIONS"]
+    cached_methods         = ["GET", "HEAD", "OPTIONS"]
+    target_origin_id       = var.media_bucket_id
+    compress               = true
+    viewer_protocol_policy = "redirect-to-https"
+    cache_policy_id        = aws_cloudfront_cache_policy.radio_manifest.id
+  }
+
+  # Live radio HLS segments - public, unauthenticated. Each segment has a
+  # unique filename (see modules/radio), so the standard optimized caching
+  # policy is correct here rather than a bespoke one.
+  ordered_cache_behavior {
+    path_pattern             = "/radio/*"
+    allowed_methods          = ["GET", "HEAD", "OPTIONS"]
+    cached_methods           = ["GET", "HEAD", "OPTIONS"]
+    target_origin_id         = var.media_bucket_id
     compress                 = true
     viewer_protocol_policy   = "redirect-to-https"
     origin_request_policy_id = data.aws_cloudfront_origin_request_policy.this.id

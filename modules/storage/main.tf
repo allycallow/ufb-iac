@@ -55,6 +55,24 @@ resource "aws_s3_bucket_lifecycle_configuration" "media" {
       storage_class = "DEEP_ARCHIVE"
     }
   }
+
+  # Safety net for the live radio HLS output - the sync loop in modules/radio
+  # deletes each segment once it rolls out of the live window, but a crash
+  # mid-broadcast could leave orphans behind. Lives under the bucket's
+  # internal production-ufb-media/ prefix (matching the bucket's own name)
+  # since that's what CloudFront's media origin_path expects.
+  rule {
+    id     = "expire-stale-radio-segments"
+    status = "Enabled"
+
+    filter {
+      prefix = "production-ufb-media/radio/live/"
+    }
+
+    expiration {
+      days = 1
+    }
+  }
 }
 
 # Events Bucket

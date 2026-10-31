@@ -141,7 +141,8 @@ module "container_registry" {
     "recommendations",
     "kafka-connect",
     "temporal-worker",
-    "ddex-ingest"
+    "ddex-ingest",
+    "radio"
   ]
 }
 
@@ -430,6 +431,18 @@ module "recommendations" {
 
   teleport_security_group_id   = module.teleport.security_group_id
   monitoring_security_group_id = module.monitoring.security_group_id
+}
+
+module "radio" {
+  source = "./modules/radio"
+
+  name = "${local.name}-radio"
+
+  ecs_cluster_arn   = module.ecs_cluster.cluster_arn
+  private_subnets   = module.networking.private_subnets
+  image_uri         = "${module.container_registry.repository_urls["radio"]}:latest"
+  media_bucket_arn  = module.storage.media_bucket_arn
+  media_bucket_name = module.storage.media_bucket_name
 }
 
 module "recently-played" {
