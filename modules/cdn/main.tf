@@ -208,6 +208,39 @@ resource "aws_cloudfront_response_headers_policy" "custom" {
   }
 }
 
+# The radio stream is public and unauthenticated (no signed cookies, unlike
+# the rest of the catalog), so unlike `custom` above this allows any origin -
+# with no credentials in play there's nothing a wildcard origin exposes.
+# Without this, Safari's native HLS engine enforces CORS on the
+# playlist/segment sub-fetches even for a same-page <audio> element whenever
+# the page's own origin differs from the stream's, and fails silently
+# (a bare MediaError with no message) - this is what actually broke
+# playback testing this, not a stream/encoding problem.
+resource "aws_cloudfront_response_headers_policy" "radio_cors" {
+  name    = "${terraform.workspace}-radio-cors"
+  comment = "Public CORS for the live radio stream - no credentials, any origin."
+
+  cors_config {
+    access_control_allow_credentials = false
+
+    access_control_allow_headers {
+      items = ["*"]
+    }
+
+    access_control_allow_methods {
+      items = ["GET", "HEAD", "OPTIONS"]
+    }
+
+    access_control_allow_origins {
+      items = ["*"]
+    }
+
+    access_control_max_age_sec = 600
+
+    origin_override = false
+  }
+}
+
 resource "aws_cloudfront_distribution" "media" {
   enabled      = true
   http_version = "http2and3"
@@ -381,27 +414,29 @@ resource "aws_cloudfront_distribution" "media" {
   # unrelated position shift reads as those existing behaviors
   # changing/losing their lambda associations.
   ordered_cache_behavior {
-    path_pattern           = "/radio/live/*.m3u8"
-    allowed_methods        = ["GET", "HEAD", "OPTIONS"]
-    cached_methods         = ["GET", "HEAD", "OPTIONS"]
-    target_origin_id       = var.media_bucket_id
-    compress               = true
-    viewer_protocol_policy = "redirect-to-https"
-    cache_policy_id        = aws_cloudfront_cache_policy.radio_manifest.id
+    path_pattern               = "/radio/live/*.m3u8"
+    allowed_methods            = ["GET", "HEAD", "OPTIONS"]
+    cached_methods             = ["GET", "HEAD", "OPTIONS"]
+    target_origin_id           = var.media_bucket_id
+    compress                   = true
+    viewer_protocol_policy     = "redirect-to-https"
+    cache_policy_id            = aws_cloudfront_cache_policy.radio_manifest.id
+    response_headers_policy_id = aws_cloudfront_response_headers_policy.radio_cors.id
   }
 
   # Live radio HLS segments - public, unauthenticated. Each segment has a
   # unique filename (see modules/radio), so the standard optimized caching
   # policy is correct here rather than a bespoke one.
   ordered_cache_behavior {
-    path_pattern             = "/radio/*"
-    allowed_methods          = ["GET", "HEAD", "OPTIONS"]
-    cached_methods           = ["GET", "HEAD", "OPTIONS"]
-    target_origin_id         = var.media_bucket_id
-    compress                 = true
-    viewer_protocol_policy   = "redirect-to-https"
-    origin_request_policy_id = data.aws_cloudfront_origin_request_policy.this.id
-    cache_policy_id          = data.aws_cloudfront_cache_policy.this.id
+    path_pattern               = "/radio/*"
+    allowed_methods            = ["GET", "HEAD", "OPTIONS"]
+    cached_methods             = ["GET", "HEAD", "OPTIONS"]
+    target_origin_id           = var.media_bucket_id
+    compress                   = true
+    viewer_protocol_policy     = "redirect-to-https"
+    origin_request_policy_id   = data.aws_cloudfront_origin_request_policy.this.id
+    cache_policy_id            = data.aws_cloudfront_cache_policy.this.id
+    response_headers_policy_id = aws_cloudfront_response_headers_policy.radio_cors.id
   }
 }
 

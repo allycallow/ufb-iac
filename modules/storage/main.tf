@@ -18,6 +18,26 @@ resource "aws_s3_bucket_cors_configuration" "media" {
     expose_headers  = []
     max_age_seconds = 3000
   }
+
+  # Bucket-level CORS, not just CloudFront's response_headers_policy, because
+  # S3 is the thing that actually answers an OPTIONS preflight - CloudFront's
+  # response_headers_policy only decorates whatever response comes back, it
+  # doesn't make CloudFront itself respond to preflight. Without a matching
+  # bucket CORS rule, S3 returns 403 to the preflight itself regardless of
+  # what headers CloudFront would have attached, and the browser never sends
+  # the real request at all (this is what actually broke radio playback in
+  # Safari - every other symptom chased before this was a red herring).
+  # Wildcard, not scoped to radio/* - S3 bucket CORS can't be scoped by key
+  # prefix, only origin/method. Safe: this only permits cross-origin JS reads
+  # of content that's already otherwise fetchable: it doesn't change
+  # CloudFront/OAI authorization for signed-cookie-gated paths.
+  cors_rule {
+    allowed_headers = ["*"]
+    allowed_methods = ["GET", "HEAD"]
+    allowed_origins = ["*"]
+    expose_headers  = []
+    max_age_seconds = 600
+  }
 }
 
 resource "aws_s3_bucket_public_access_block" "media" {
