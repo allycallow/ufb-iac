@@ -70,14 +70,22 @@ variable "teleport_db_username" {
   default     = "teleport_svc"
 }
 
+variable "manage_redis" {
+  description = "Mirrors root var.manage_redis. When false, the elasticache-redis db_service entry is dropped entirely rather than pointed at the self-hosted container, which Teleport's IAM-authenticated elasticache integration can't target anyway."
+  type        = bool
+  default     = true
+}
+
 variable "redis_replication_group_id" {
-  description = "ElastiCache replication group ID, used so Teleport can look up the engine version for IAM auth support detection"
+  description = "ElastiCache replication group ID, used so Teleport can look up the engine version for IAM auth support detection. Unused (pass \"\") when manage_redis is false."
   type        = string
+  default     = ""
 }
 
 variable "redis_endpoint" {
-  description = "ElastiCache Redis endpoint, host:port"
+  description = "ElastiCache Redis endpoint, host:port. Unused (pass \"\") when manage_redis is false."
   type        = string
+  default     = ""
 }
 
 variable "opensearch_domain_endpoint" {

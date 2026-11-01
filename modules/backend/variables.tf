@@ -114,7 +114,12 @@ variable "stripe_event_bus_name" {
 }
 
 variable "redis_host" {
-  description = "Hostname of the ElastiCache Redis node"
+  description = "Hostname of the Redis node - either the ElastiCache endpoint or the self-hosted container's Service Connect name (see root var.manage_redis)."
+  type        = string
+}
+
+variable "redis_tls" {
+  description = "\"true\" for ElastiCache (transit encryption enabled) or \"false\" for the self-hosted container, which doesn't terminate TLS. String, not bool, to match the env var it's passed through as."
   type        = string
 }
 

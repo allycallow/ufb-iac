@@ -31,15 +31,15 @@ output "temporal_db_secret_arn" {
 }
 
 output "redis_host" {
-  value = aws_elasticache_replication_group.redis.primary_endpoint_address
+  value = try(aws_elasticache_replication_group.redis[0].primary_endpoint_address, null)
 }
 
 output "redis_endpoint" {
-  value = "${aws_elasticache_replication_group.redis.primary_endpoint_address}:${aws_elasticache_replication_group.redis.port}"
+  value = try("${aws_elasticache_replication_group.redis[0].primary_endpoint_address}:${aws_elasticache_replication_group.redis[0].port}", null)
 }
 
 output "redis_replication_group_id" {
-  value = aws_elasticache_replication_group.redis.replication_group_id
+  value = try(aws_elasticache_replication_group.redis[0].replication_group_id, null)
 }
 
 output "s3_export_policy_arn" {

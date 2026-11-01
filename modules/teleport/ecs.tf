@@ -53,6 +53,7 @@ locals {
       # sidecar (socat) in this task proxying localhost:5433 to the real
       # endpoint, or a Cloud Map/private-DNS CNAME alias — so Teleport treats
       # it as a self-hosted database and skips IAM token generation.
+      %{ if var.manage_redis }
       - name: elasticache-redis
         protocol: redis
         uri: "${var.redis_endpoint}"
@@ -62,6 +63,7 @@ locals {
             replication_group_id: ${var.redis_replication_group_id}
         static_labels:
           access-tier: standard
+      %{ endif }
       - name: opensearch
         protocol: opensearch
         uri: "${var.opensearch_domain_endpoint}:443"

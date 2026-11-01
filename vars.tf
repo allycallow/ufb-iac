@@ -50,6 +50,12 @@ variable "acme_email" {
   default     = "alex@upfrontbeats.com"
 }
 
+variable "manage_redis" {
+  description = "True = managed ElastiCache replication group (production-grade: multi-AZ-capable, Teleport-proxyable, ~$13/mo running 24/7). False = self-hosted Redis container on ECS at desired_count 0 by default (see modules/redis), for pre-launch cost savings while there's no real traffic. Flip back to true before going live."
+  type        = bool
+  default     = true
+}
+
 variable "cognito_certificate_arn" {
   description = "us-east-1 ACM certificate covering *.upfrontbeats.com, used for Cognito's custom Hosted UI domain"
   type        = string

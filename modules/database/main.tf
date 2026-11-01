@@ -155,6 +155,8 @@ resource "aws_db_instance_role_association" "se_export" {
 }
 
 resource "aws_elasticache_replication_group" "redis" {
+  count = var.manage_redis ? 1 : 0
+
   replication_group_id       = "${var.name}-app"
   description                = "${var.name} redis"
   engine                     = "redis"

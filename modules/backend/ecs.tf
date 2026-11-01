@@ -130,7 +130,7 @@ module "backend_task_definition" {
         },
         {
           "name" : "REDIS_TLS",
-          "value" : "true"
+          "value" : var.redis_tls
         },
         {
           "name" : "OTEL_EXPORTER_OTLP_ENDPOINT",

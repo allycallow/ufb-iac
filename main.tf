@@ -117,6 +117,12 @@ locals {
       "latest"
     )
   }
+
+  # See var.manage_redis: self-hosted Redis uses its Service Connect short
+  # name directly (same pattern as modules/kafka's "kafka" alias), no module
+  # output needed - unlike the managed replication group's dynamic endpoint.
+  redis_host = var.manage_redis ? module.database.redis_host : "redis"
+  redis_tls  = var.manage_redis ? "true" : "false"
 }
 
 # ── Infrastructure Modules ────────────────────────────────────────────────────
@@ -219,6 +225,27 @@ module "database" {
   rds_sg_id                = module.networking.rds_sg_id
   elasticache_sg_id        = module.networking.redis_sg_id
   elasticache_subnet_group = module.networking.elasticache_subnet_group
+  manage_redis             = var.manage_redis
+}
+
+# Pre-launch stand-in for ElastiCache - see var.manage_redis. Always declared
+# so the service exists at desired_count = 0 either way; only its count
+# matters when manage_redis is true, at which point this just sits idle.
+module "redis_selfhosted" {
+  source = "./modules/redis"
+
+  name                      = local.name
+  ecs_cluster_arn           = module.ecs_cluster.cluster_arn
+  private_subnets           = module.networking.private_subnets
+  service_connect_namespace = module.ecs_cluster.service_discovery_namespace_name
+  task_exec_policy_arn      = module.ecs_cluster.task_exec_policy_arn
+  client_security_group_ids = [module.backend.security_group_id]
+
+  tags = {
+    Environment = terraform.workspace
+    Name        = local.name
+    Workflow    = "redis-selfhosted"
+  }
 }
 
 module "email" {
@@ -379,8 +406,9 @@ module "teleport" {
   db_instance_identifier  = module.database.db_instance_identifier
   db_instance_resource_id = module.database.db_instance_resource_id
 
-  redis_endpoint             = module.database.redis_endpoint
-  redis_replication_group_id = module.database.redis_replication_group_id
+  manage_redis               = var.manage_redis
+  redis_endpoint             = var.manage_redis ? module.database.redis_endpoint : ""
+  redis_replication_group_id = var.manage_redis ? module.database.redis_replication_group_id : ""
 
   opensearch_domain_endpoint = module.search.opensearch_domain_endpoint
   opensearch_domain_arn      = module.search.opensearch_domain_arn
@@ -585,7 +613,8 @@ module "backend" {
   event_bus_name                    = module.eventbridge.eventbridge_bus_name
   event_bus_arn                     = module.eventbridge.eventbridge_bus_arn
   stripe_event_bus_name             = var.stripe_event_bus_name
-  redis_host                        = module.database.redis_host
+  redis_host                        = local.redis_host
+  redis_tls                         = local.redis_tls
   secret_prefix                     = local.secret_prefix
   task_exec_policy_arn              = module.ecs_cluster.task_exec_policy_arn
   schema_registry_arn               = module.schema_registry.registry_arn
