@@ -99,6 +99,13 @@ module "track_metadata_processing_task_definition" {
         "s3:*",
       ]
       resources = ["${var.media_bucket_arn}/*"]
+    },
+    {
+      effect = "Allow"
+      actions = [
+        "s3:GetObject",
+      ]
+      resources = ["${var.ddex_delivery_bucket_arn}/*"]
     }
   ]
 

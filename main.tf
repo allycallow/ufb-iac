@@ -275,6 +275,11 @@ module "audio_processing" {
   event_bus_arn                     = module.eventbridge.eventbridge_bus_arn
   kafka_bootstrap_servers           = module.kafka.broker_dns_endpoint
   download_content_keys_kms_key_arn = aws_kms_key.download_content_keys.arn
+  # Derived from the same naming convention module.ddex_delivery uses for its
+  # own bucket, rather than referencing module.ddex_delivery.bucket_arn
+  # directly - that module already depends on this one's task role ARN (for
+  # its KMS policy), so a reference back here would be a circular dependency.
+  ddex_delivery_bucket_arn = "arn:aws:s3:::${local.name}-ddex-delivery"
 }
 
 module "ddex_delivery" {
@@ -438,6 +443,9 @@ module "track_metadata_processing" {
   private_subnets         = module.networking.private_subnets
   kafka_bootstrap_servers = module.kafka.broker_dns_endpoint
   sentry_dsn              = var.track_metadata_sentry_dsn
+  # See module.audio_processing's identical argument above for why this is
+  # derived rather than referencing module.ddex_delivery.bucket_arn directly.
+  ddex_delivery_bucket_arn = "arn:aws:s3:::${local.name}-ddex-delivery"
 }
 
 module "recommendations" {
@@ -738,6 +746,13 @@ module "temporal" {
     AUDIO_PROCESSING_TASK_DEFINITION = module.audio_processing.task_definition_family
     AUDIO_PROCESSING_CONTAINER_NAME  = "audio-processing"
     AUDIO_PROCESSING_SECURITY_GROUP  = module.audio_processing.security_group_id
+
+    # audio-processing's own output upload always targets this bucket
+    # explicitly now (see activities/track_ingestion.py), rather than
+    # whichever bucket it was told to read the source wav from - those two
+    # differ for DDEX deliveries, which run this task directly against the
+    # DDEX delivery bucket instead of the media bucket a manual upload lands in.
+    MEDIA_BUCKET_NAME = module.storage.media_bucket_name
 
     TRACK_METADATA_TASK_DEFINITION = module.track_metadata_processing.task_definition_family
     TRACK_METADATA_CONTAINER_NAME  = "tm-processing"

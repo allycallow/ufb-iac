@@ -111,6 +111,13 @@ module "audio_processing_task_definition" {
     {
       effect = "Allow"
       actions = [
+        "s3:GetObject",
+      ]
+      resources = ["${var.ddex_delivery_bucket_arn}/*"]
+    },
+    {
+      effect = "Allow"
+      actions = [
         "events:PutEvents",
       ]
       resources = [var.event_bus_arn]

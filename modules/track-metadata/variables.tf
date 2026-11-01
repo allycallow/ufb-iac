@@ -45,3 +45,8 @@ variable "sentry_dsn" {
   default     = ""
   sensitive   = true
 }
+
+variable "ddex_delivery_bucket_arn" {
+  description = "ARN of the DDEX delivery bucket - DdexDeliveryWorkflow starts this task directly against it, so it needs s3:GetObject here too (not just the KMS decrypt grant modules/ddex-delivery's CMK policy already gives this role)"
+  type        = string
+}

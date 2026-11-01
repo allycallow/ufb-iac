@@ -48,3 +48,8 @@ variable "download_content_keys_kms_key_arn" {
   description = "ARN of the KMS key that wraps per-track AES content keys for offline download assets - this task is granted kms:Encrypt on it"
   type        = string
 }
+
+variable "ddex_delivery_bucket_arn" {
+  description = "ARN of the DDEX delivery bucket - DdexDeliveryWorkflow starts this task directly against it, so it needs s3:GetObject here too (not just the KMS decrypt grant modules/ddex-delivery's CMK policy already gives this role)"
+  type        = string
+}
