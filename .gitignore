@@ -7,3 +7,4 @@ __pycache__/
 venv/
 modules/cast-manifest-rewrite/files/*.zip
 modules/cast-manifest-rewrite/files/node_modules/.scratch/
+/.scratch/
