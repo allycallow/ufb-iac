@@ -180,6 +180,16 @@ module "kafka_connect_task_definition" {
         startPeriod = 60
       }
 
+      # Observed on a cold start (empty image cache / fresh Fargate ENI):
+      # scanning all plugins (debezium, camel-sqs, opensearch, msk-config-providers)
+      # alone takes 60-100s, before the healthCheck above even gets a chance to
+      # pass. This container's own startTimeout otherwise falls back to the
+      # module's default (30s) - the same mismatch connector-registrar's
+      # startTimeout=180 below was already raised to fix, just not applied here
+      # too. ECS was killing the task outright well before startPeriod+retries
+      # could ever pass.
+      startTimeout = 180
+
       enable_cloudwatch_logging = true
     }
 
