@@ -3,13 +3,13 @@ output "security_group_id" {
 }
 
 output "opensearch_domain_endpoint" {
-  value = aws_opensearch_domain.main.endpoint
+  value = local.resolved_opensearch_domain_endpoint
 }
 
 output "opensearch_domain_arn" {
-  value = aws_opensearch_domain.main.arn
+  value = local.resolved_opensearch_domain_arn
 }
 
 output "opensearch_domain_name" {
-  value = aws_opensearch_domain.main.domain_name
+  value = try(aws_opensearch_domain.main[0].domain_name, null)
 }

@@ -64,7 +64,11 @@ module "search_task_definition" {
       environment = [
         {
           name  = "OPENSEARCH_DOMAIN_ENDPOINT"
-          value = aws_opensearch_domain.main.endpoint
+          value = local.resolved_opensearch_domain_endpoint
+        },
+        {
+          name  = "OPENSEARCH_MANAGED"
+          value = var.manage_opensearch ? "true" : "false"
         },
         {
           name  = "BACKEND_API_ENDPOINT"
@@ -202,29 +206,35 @@ module "search_task_definition" {
     }
   }
 
-  tasks_iam_role_statements = [
-    {
-      actions = [
-        "secretsmanager:GetSecretValue"
-      ]
-      effect = "Allow"
-      resources = [
-        "${var.secret_prefix}:*"
-      ]
-    },
-    {
-      effect = "Allow"
-      actions = [
-        "es:ESHttpGet",
-        "es:ESHttpPut",
-        "es:ESHttpPost",
-        "es:ESHttpDelete"
-      ]
-      resources = [
-        "${aws_opensearch_domain.main.arn}/*"
-      ]
-    }
-  ]
+  tasks_iam_role_statements = concat(
+    [
+      {
+        actions = [
+          "secretsmanager:GetSecretValue"
+        ]
+        effect = "Allow"
+        resources = [
+          "${var.secret_prefix}:*"
+        ]
+      }
+    ],
+    # Meaningless against the self-hosted container (no IAM-based access
+    # control there) - see var.manage_opensearch.
+    var.manage_opensearch ? [
+      {
+        effect = "Allow"
+        actions = [
+          "es:ESHttpGet",
+          "es:ESHttpPut",
+          "es:ESHttpPost",
+          "es:ESHttpDelete"
+        ]
+        resources = [
+          "${local.resolved_opensearch_domain_arn}/*"
+        ]
+      }
+    ] : []
+  )
 
   create_task_exec_iam_role = true
   task_exec_iam_role_name   = "ecs-ufb-search-task-exec-role"

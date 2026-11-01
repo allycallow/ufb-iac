@@ -123,6 +123,12 @@ locals {
   # output needed - unlike the managed replication group's dynamic endpoint.
   redis_host = var.manage_redis ? module.database.redis_host : "redis"
   redis_tls  = var.manage_redis ? "true" : "false"
+
+  # See var.manage_opensearch: same self-hosted-Service-Connect-name pattern
+  # as redis. The sink connector needs the full scheme+port URL though,
+  # unlike consumers that take a bare host (module.search already resolves
+  # its own endpoint/arn internally based on the same toggle).
+  opensearch_connection_url = var.manage_opensearch ? "https://${module.search.opensearch_domain_endpoint}:443" : "http://opensearch:9200"
 }
 
 # ── Infrastructure Modules ────────────────────────────────────────────────────
@@ -328,6 +334,35 @@ module "search" {
 
   teleport_security_group_id   = module.teleport.security_group_id
   monitoring_security_group_id = module.monitoring.security_group_id
+
+  manage_opensearch           = var.manage_opensearch
+  self_hosted_opensearch_host = "opensearch"
+}
+
+# Pre-launch stand-in for the managed OpenSearch domain - see
+# var.manage_opensearch. Always declared so the service exists at
+# desired_count = 0 either way; only its count matters when manage_opensearch
+# is true, at which point this just sits idle. No persistent volume - see
+# modules/opensearch's own comment on why that's an accepted tradeoff here.
+module "opensearch_selfhosted" {
+  source = "./modules/opensearch"
+
+  name                      = local.name
+  ecs_cluster_arn           = module.ecs_cluster.cluster_arn
+  private_subnets           = module.networking.private_subnets
+  service_connect_namespace = module.ecs_cluster.service_discovery_namespace_name
+  task_exec_policy_arn      = module.ecs_cluster.task_exec_policy_arn
+  client_security_group_ids = [
+    module.search.security_group_id,
+    module.kafka_connect.security_group_id,
+    module.airflow.security_group_id,
+  ]
+
+  tags = {
+    Environment = terraform.workspace
+    Name        = local.name
+    Workflow    = "opensearch-selfhosted"
+  }
 }
 
 module "kafka" {
@@ -380,6 +415,8 @@ module "kafka_connect" {
   task_exec_policy_arn         = module.ecs_cluster.task_exec_policy_arn
   image_uri                    = "${module.container_registry.repository_urls["kafka-connect"]}:latest"
   opensearch_domain_arn        = module.search.opensearch_domain_arn
+  opensearch_connection_url    = local.opensearch_connection_url
+  manage_opensearch            = var.manage_opensearch
   audio_upload_queue_arn       = module.audio_processing.queue_arn
   ddex_delivery_queue_arn      = module.ddex_delivery.queue_arn
   debezium_secret_arn          = module.database.debezium_secret_arn
@@ -415,6 +452,7 @@ module "teleport" {
   redis_endpoint             = var.manage_redis ? module.database.redis_endpoint : ""
   redis_replication_group_id = var.manage_redis ? module.database.redis_replication_group_id : ""
 
+  manage_opensearch          = var.manage_opensearch
   opensearch_domain_endpoint = module.search.opensearch_domain_endpoint
   opensearch_domain_arn      = module.search.opensearch_domain_arn
 
@@ -869,6 +907,7 @@ module "airflow" {
   service_connect_namespace    = module.ecs_cluster.service_discovery_namespace_name
   task_exec_policy_arn         = module.ecs_cluster.task_exec_policy_arn
 
+  manage_opensearch          = var.manage_opensearch
   opensearch_domain_endpoint = module.search.opensearch_domain_endpoint
   opensearch_domain_arn      = module.search.opensearch_domain_arn
 

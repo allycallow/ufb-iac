@@ -2,9 +2,20 @@ data "aws_caller_identity" "search_current" {}
 
 locals {
   opensearch_domain_arn = "arn:aws:es:eu-west-2:${data.aws_caller_identity.search_current.account_id}:domain/ufb-production"
+
+  # See var.manage_opensearch: self-hosted OpenSearch uses its Service
+  # Connect short name directly (same pattern as modules/redis's `redis`
+  # alias), no module output needed - unlike the managed domain's dynamic
+  # endpoint. ARN is meaningless for the self-hosted container (no IAM-based
+  # access control), so consumers get an empty string and must skip any
+  # es:* IAM statement in that mode, same as modules/database's redis.
+  resolved_opensearch_domain_endpoint = var.manage_opensearch ? aws_opensearch_domain.main[0].endpoint : var.self_hosted_opensearch_host
+  resolved_opensearch_domain_arn      = var.manage_opensearch ? local.opensearch_domain_arn : ""
 }
 
 resource "aws_opensearch_domain" "main" {
+  count = var.manage_opensearch ? 1 : 0
+
   domain_name    = "ufb-production"
   engine_version = "OpenSearch_2.19"
 

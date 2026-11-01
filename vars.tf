@@ -51,7 +51,13 @@ variable "acme_email" {
 }
 
 variable "manage_redis" {
-  description = "True = managed ElastiCache replication group (production-grade: multi-AZ-capable, Teleport-proxyable, ~$13/mo running 24/7). False = self-hosted Redis container on ECS at desired_count 0 by default (see modules/redis), for pre-launch cost savings while there's no real traffic. Flip back to true before going live."
+  description = "True = managed ElastiCache replication group (production-grade: multi-AZ-capable, Teleport-proxyable, ~$13/mo running 24/7). False = self-hosted Redis container on ECS (see modules/redis), for pre-launch cost savings while there's no real traffic. Currently false by deliberate choice, not just pre-launch default - revisit before going live."
+  type        = bool
+  default     = false
+}
+
+variable "manage_opensearch" {
+  description = "True = managed OpenSearch domain (production-grade: IAM-signed access, trusted TLS, ~$30/mo running 24/7). False = self-hosted OpenSearch container on ECS (see modules/opensearch), for pre-launch cost savings while there's no real traffic. Requires ufb-search and ufb-airflow deployed with their OPENSEARCH_MANAGED support, and the self-hosted index populated via the reindex_opensearch Airflow DAG, before flipping to false."
   type        = bool
   default     = true
 }

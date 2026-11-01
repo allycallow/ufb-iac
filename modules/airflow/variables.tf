@@ -75,6 +75,12 @@ variable "opensearch_domain_endpoint" {
 }
 
 variable "opensearch_domain_arn" {
-  description = "ARN of the shared OpenSearch domain, for the reindex_opensearch DAG's IAM permissions"
+  description = "ARN of the shared OpenSearch domain, for the reindex_opensearch DAG's IAM permissions. Empty when manage_opensearch is false."
   type        = string
+}
+
+variable "manage_opensearch" {
+  description = "Mirrors root var.manage_opensearch. Tells the reindex_opensearch DAG's OpenSearch client whether to use IAM SigV4 signing (the real domain) or a plain unsigned connection (the self-hosted container)."
+  type        = bool
+  default     = true
 }

@@ -53,7 +53,7 @@ locals {
       # sidecar (socat) in this task proxying localhost:5433 to the real
       # endpoint, or a Cloud Map/private-DNS CNAME alias — so Teleport treats
       # it as a self-hosted database and skips IAM token generation.
-      %{ if var.manage_redis }
+      %{if var.manage_redis}
       - name: elasticache-redis
         protocol: redis
         uri: "${var.redis_endpoint}"
@@ -63,7 +63,8 @@ locals {
             replication_group_id: ${var.redis_replication_group_id}
         static_labels:
           access-tier: standard
-      %{ endif }
+      %{endif}
+      %{if var.manage_opensearch}
       - name: opensearch
         protocol: opensearch
         uri: "${var.opensearch_domain_endpoint}:443"
@@ -72,6 +73,7 @@ locals {
           account_id: ${var.account_id}
         static_labels:
           access-tier: standard
+      %{endif}
 
     ssh_service:
       enabled: false
@@ -242,7 +244,7 @@ module "teleport_task_definition" {
     exec_policy = var.task_exec_policy_arn
   }
 
-  tasks_iam_role_statements = [
+  tasks_iam_role_statements = concat([
     {
       sid    = "RdsIamConnect"
       effect = "Allow"
@@ -286,14 +288,6 @@ module "teleport_task_definition" {
           values   = [aws_efs_access_point.teleport_data.arn]
         }
       ]
-    },
-    {
-      sid    = "AssumeOpenSearchRole"
-      effect = "Allow"
-      actions = [
-        "sts:AssumeRole"
-      ]
-      resources = [aws_iam_role.opensearch_access.arn]
     },
     {
       sid    = "TeleportStateBackend"
@@ -342,7 +336,20 @@ module "teleport_task_definition" {
         "${aws_s3_bucket.teleport_sessions.arn}/*"
       ]
     }
-  ]
+    ],
+    # Meaningless against the self-hosted container (no IAM-based access
+    # control there) - see var.manage_opensearch.
+    var.manage_opensearch ? [
+      {
+        sid    = "AssumeOpenSearchRole"
+        effect = "Allow"
+        actions = [
+          "sts:AssumeRole"
+        ]
+        resources = [aws_iam_role.opensearch_access[0].arn]
+      }
+    ] : []
+  )
 
   tags = var.tags
 }

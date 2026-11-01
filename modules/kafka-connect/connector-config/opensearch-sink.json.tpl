@@ -4,9 +4,11 @@
     "connector.class": "io.aiven.kafka.connect.opensearch.OpenSearchSinkConnector",
     "tasks.max": "1",
     "topics": "ufb.tracks,ufb.releases,ufb.artists,ufb.labels",
-    "connection.url": "https://vpc-ufb-production-4h7sifyorjglxisr5y2r7xpt6a.eu-west-2.es.amazonaws.com:443",
+    "connection.url": "${connection_url}",
+%{ if manage_opensearch }
     "aws.region": "eu-west-2",
     "aws.service.signing.name": "es",
+%{ endif }
     "key.ignore": "false",
     "schema.ignore": "true",
     "behavior.on.null.values": "delete",

@@ -33,6 +33,14 @@ resource "local_file" "debezium_postgres_outbox_source_config" {
   })
 }
 
+resource "local_file" "opensearch_sink_config" {
+  filename = "${path.module}/connector-config/opensearch-sink.json"
+  content = templatefile("${path.module}/connector-config/opensearch-sink.json.tpl", {
+    connection_url    = var.opensearch_connection_url
+    manage_opensearch = var.manage_opensearch
+  })
+}
+
 locals {
   # Connector configs to register on every task start. Registration is via
   # POST /connectors (not PUT .../config) and failures are swallowed: POST
@@ -44,7 +52,7 @@ locals {
   connector_configs = {
     "sqs-audio-uploads-source"        = file("${path.module}/connector-config/sqs-audio-uploads-source.json")
     "sqs-ddex-deliveries-source"      = file("${path.module}/connector-config/sqs-ddex-deliveries-source.json")
-    "opensearch-sink"                 = file("${path.module}/connector-config/opensearch-sink.json")
+    "opensearch-sink"                 = local_file.opensearch_sink_config.content
     "debezium-postgres-outbox-source" = local_file.debezium_postgres_outbox_source_config.content
   }
 
@@ -285,50 +293,56 @@ module "kafka_connect_task_definition" {
     exec_policy = var.task_exec_policy_arn
   }
 
-  tasks_iam_role_statements = [
-    {
-      sid    = "OpenSearchSigV4Access"
-      effect = "Allow"
-      actions = [
-        "es:ESHttpGet",
-        "es:ESHttpPut",
-        "es:ESHttpPost",
-        "es:ESHttpDelete",
-        "es:ESHttpHead"
-      ]
-      resources = ["${var.opensearch_domain_arn}/*"]
-    },
-    {
-      sid    = "AudioUploadSourceAccess"
-      effect = "Allow"
-      actions = [
-        "sqs:ReceiveMessage",
-        "sqs:DeleteMessage",
-        "sqs:GetQueueAttributes",
-        "sqs:GetQueueUrl"
-      ]
-      resources = [var.audio_upload_queue_arn]
-    },
-    {
-      sid    = "DdexDeliverySourceAccess"
-      effect = "Allow"
-      actions = [
-        "sqs:ReceiveMessage",
-        "sqs:DeleteMessage",
-        "sqs:GetQueueAttributes",
-        "sqs:GetQueueUrl"
-      ]
-      resources = [var.ddex_delivery_queue_arn]
-    },
-    {
-      sid    = "DebeziumSecretAccess"
-      effect = "Allow"
-      actions = [
-        "secretsmanager:GetSecretValue"
-      ]
-      resources = [var.debezium_secret_arn]
-    }
-  ]
+  tasks_iam_role_statements = concat(
+    # Meaningless against the self-hosted container (no IAM-based access
+    # control there) - see var.manage_opensearch.
+    var.manage_opensearch ? [
+      {
+        sid    = "OpenSearchSigV4Access"
+        effect = "Allow"
+        actions = [
+          "es:ESHttpGet",
+          "es:ESHttpPut",
+          "es:ESHttpPost",
+          "es:ESHttpDelete",
+          "es:ESHttpHead"
+        ]
+        resources = ["${var.opensearch_domain_arn}/*"]
+      }
+    ] : [],
+    [
+      {
+        sid    = "AudioUploadSourceAccess"
+        effect = "Allow"
+        actions = [
+          "sqs:ReceiveMessage",
+          "sqs:DeleteMessage",
+          "sqs:GetQueueAttributes",
+          "sqs:GetQueueUrl"
+        ]
+        resources = [var.audio_upload_queue_arn]
+      },
+      {
+        sid    = "DdexDeliverySourceAccess"
+        effect = "Allow"
+        actions = [
+          "sqs:ReceiveMessage",
+          "sqs:DeleteMessage",
+          "sqs:GetQueueAttributes",
+          "sqs:GetQueueUrl"
+        ]
+        resources = [var.ddex_delivery_queue_arn]
+      },
+      {
+        sid    = "DebeziumSecretAccess"
+        effect = "Allow"
+        actions = [
+          "secretsmanager:GetSecretValue"
+        ]
+        resources = [var.debezium_secret_arn]
+      }
+    ]
+  )
 
   tags = var.tags
 }

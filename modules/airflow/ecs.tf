@@ -133,6 +133,10 @@ module "airflow_task_definition" {
         {
           name  = "OPENSEARCH_DOMAIN_ENDPOINT"
           value = var.opensearch_domain_endpoint
+        },
+        {
+          name  = "OPENSEARCH_MANAGED"
+          value = var.manage_opensearch ? "true" : "false"
         }
       ]
 
@@ -260,7 +264,7 @@ module "airflow_task_definition" {
   create_task_exec_iam_role = true
   task_exec_iam_role_name   = "ecs-airflow-task-exec-role"
 
-  tasks_iam_role_statements = [
+  tasks_iam_role_statements = concat([
     {
       effect = "Allow"
       actions = [
@@ -336,21 +340,24 @@ module "airflow_task_definition" {
       ]
       resources = ["*"]
     },
-
-    # OpenSearch access for the reindex_opensearch DAG (mirrors modules/search)
-    {
-      effect = "Allow"
-      actions = [
-        "es:ESHttpGet",
-        "es:ESHttpPut",
-        "es:ESHttpPost",
-        "es:ESHttpDelete"
-      ]
-      resources = [
-        "${var.opensearch_domain_arn}/*"
-      ]
-    }
-  ]
+    ],
+    # Meaningless against the self-hosted container (no IAM-based access
+    # control there) - see var.manage_opensearch.
+    var.manage_opensearch ? [
+      {
+        effect = "Allow"
+        actions = [
+          "es:ESHttpGet",
+          "es:ESHttpPut",
+          "es:ESHttpPost",
+          "es:ESHttpDelete"
+        ]
+        resources = [
+          "${var.opensearch_domain_arn}/*"
+        ]
+      }
+    ] : []
+  )
 
   task_exec_iam_role_policies = {
     exec_policy     = var.task_exec_policy_arn

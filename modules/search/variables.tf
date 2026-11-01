@@ -60,3 +60,15 @@ variable "monitoring_security_group_id" {
   description = "Security group ID of the monitoring ECS service"
   type        = string
 }
+
+variable "manage_opensearch" {
+  description = "True = managed OpenSearch domain (production-grade: IAM-signed access, trusted TLS cert, ~$30/mo running 24/7). False = self-hosted OpenSearch container on ECS (see modules/opensearch), for pre-launch cost savings while there's no real traffic."
+  type        = bool
+  default     = true
+}
+
+variable "self_hosted_opensearch_host" {
+  description = "Service Connect short name of the self-hosted OpenSearch container (see modules/opensearch). Only used when manage_opensearch is false."
+  type        = string
+  default     = ""
+}

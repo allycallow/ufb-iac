@@ -1,4 +1,6 @@
 resource "aws_iam_role" "opensearch_access" {
+  count = var.manage_opensearch ? 1 : 0
+
   name = "${var.name}-teleport-opensearch"
 
   assume_role_policy = jsonencode({
@@ -18,8 +20,10 @@ resource "aws_iam_role" "opensearch_access" {
 }
 
 resource "aws_iam_role_policy" "opensearch_access" {
+  count = var.manage_opensearch ? 1 : 0
+
   name = "opensearch-access"
-  role = aws_iam_role.opensearch_access.id
+  role = aws_iam_role.opensearch_access[0].id
 
   policy = jsonencode({
     Version = "2012-10-17"

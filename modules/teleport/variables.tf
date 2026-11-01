@@ -88,6 +88,12 @@ variable "redis_endpoint" {
   default     = ""
 }
 
+variable "manage_opensearch" {
+  description = "Mirrors root var.manage_opensearch. When false, the opensearch db_service entry and the AssumeOpenSearchRole/opensearch_access IAM role are dropped entirely rather than pointed at the self-hosted container, which has no IAM-based access control to broker anyway."
+  type        = bool
+  default     = true
+}
+
 variable "opensearch_domain_endpoint" {
   type = string
 }

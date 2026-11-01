@@ -29,8 +29,19 @@ variable "image_uri" {
 }
 
 variable "opensearch_domain_arn" {
-  description = "ARN of the OpenSearch domain the sink connector writes to, for scoping the task role's es:ESHttp* permissions"
+  description = "ARN of the OpenSearch domain the sink connector writes to, for scoping the task role's es:ESHttp* permissions. Empty when manage_opensearch is false (self-hosted has no IAM-based access control)."
   type        = string
+}
+
+variable "opensearch_connection_url" {
+  description = "Full connection URL (scheme+host+port) the sink connector writes to - the managed domain's https://...:443, or the self-hosted container's http://opensearch:9200."
+  type        = string
+}
+
+variable "manage_opensearch" {
+  description = "Mirrors root var.manage_opensearch. Controls whether the sink connector's config includes AWS SigV4 signing (meaningless against the self-hosted container, which has no security plugin)."
+  type        = bool
+  default     = true
 }
 
 variable "audio_upload_queue_arn" {
