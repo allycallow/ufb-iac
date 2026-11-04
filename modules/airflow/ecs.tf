@@ -327,6 +327,15 @@ module "airflow_task_definition" {
         "arn:aws:dynamodb:eu-west-2:${data.aws_caller_identity.current.account_id}:table/production-ufb-recommendations"
       ]
     },
+    {
+      # Read-only: the export_stream_ledger DAG copies the royalty ledger into BigQuery
+      # (see modules/streams). It can't write to or change the ledger.
+      effect  = "Allow"
+      actions = ["dynamodb:Scan"]
+      resources = [
+        "arn:aws:dynamodb:eu-west-2:${data.aws_caller_identity.current.account_id}:table/production-ufb-streams"
+      ]
+    },
 
     # IAM Identity Center permissions for AwsAuthManager
     {
