@@ -320,6 +320,22 @@ module "backend_task_definition" {
       ]
     },
     {
+      actions = ["dynamodb:PutItem", "dynamodb:UpdateItem", "dynamodb:GetItem", "dynamodb:Query"]
+      effect  = "Allow"
+      resources = [
+        "arn:aws:dynamodb:eu-west-2:${data.aws_caller_identity.current.account_id}:table/production-ufb-stream-sessions"
+      ]
+    },
+    {
+      # Append-only: no UpdateItem/DeleteItem, so a bug or compromised task can't rewrite the
+      # royalty ledger (see modules/streams).
+      actions = ["dynamodb:PutItem", "dynamodb:GetItem", "dynamodb:Query"]
+      effect  = "Allow"
+      resources = [
+        "arn:aws:dynamodb:eu-west-2:${data.aws_caller_identity.current.account_id}:table/production-ufb-streams"
+      ]
+    },
+    {
       # Read-only: schema changes go through Terraform (modules/schema-registry),
       # not app-driven auto-registration, so contract changes stay reviewable in PRs.
       actions = ["glue:GetSchemaVersion", "glue:GetSchemaByDefinition", "glue:CheckSchemaVersionValidity"]

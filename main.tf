@@ -530,6 +530,17 @@ module "recently-played" {
   }
 }
 
+module "streams" {
+  source = "./modules/streams"
+  name   = local.name
+
+  tags = {
+    Environment = terraform.workspace
+    Name        = local.name
+    Workflow    = "streams"
+  }
+}
+
 module "idempotency" {
   source = "./modules/idempotency"
   stage  = terraform.workspace
