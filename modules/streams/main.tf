@@ -42,6 +42,12 @@ resource "aws_dynamodb_table" "ledger" {
   range_key                   = "SK"
   deletion_protection_enabled = true
 
+  # Change data capture: every new ledger row is picked up by the stream-ledger-qualified Lambda
+  # (ufb/services) and sent to the warehouse - see ledger-stream.tf.
+  # NEW_IMAGE is enough: the ledger is append-only, so there is no old image to compare.
+  stream_enabled   = true
+  stream_view_type = "NEW_IMAGE"
+
   attribute {
     name = "PK"
     type = "S"
