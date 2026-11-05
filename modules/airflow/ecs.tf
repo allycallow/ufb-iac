@@ -9,6 +9,12 @@ module "airflow_task_definition" {
   # this rather than letting the change apply silently and do nothing.
   force_new_deployment = var.use_spot
 
+  # Lets `aws ecs execute-command` reach the container directly - needed to
+  # run `airflow dags trigger <dag_id>` via the CLI when the webserver/ALB
+  # health-check path isn't available or trustworthy (same pattern already
+  # used by modules/kafka-connect).
+  enable_execute_command = true
+
   runtime_platform = {
     cpu_architecture        = "ARM64"
     operating_system_family = "LINUX"

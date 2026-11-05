@@ -57,9 +57,9 @@ variable "manage_redis" {
 }
 
 variable "manage_opensearch" {
-  description = "True = managed OpenSearch domain (production-grade: IAM-signed access, trusted TLS, ~$30/mo running 24/7). False = self-hosted OpenSearch container on ECS (see modules/opensearch), for pre-launch cost savings while there's no real traffic. Requires ufb-search and ufb-airflow deployed with their OPENSEARCH_MANAGED support, and the self-hosted index populated via the reindex_opensearch Airflow DAG, before flipping to false."
+  description = "True = managed OpenSearch domain (production-grade: IAM-signed access, trusted TLS, ~$30/mo running 24/7). False = self-hosted OpenSearch container on ECS (see modules/opensearch), for pre-launch cost savings while there's no real traffic. Currently false by deliberate choice, not just pre-launch default - revisit before going live. ufb-search and ufb-airflow are already deployed with OPENSEARCH_MANAGED support as of this flip; the self-hosted index still needs the reindex_opensearch Airflow DAG run once to backfill from Postgres."
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "cognito_certificate_arn" {

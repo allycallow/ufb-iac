@@ -33,11 +33,14 @@ module "opensearch_task_definition" {
 
   container_definitions = {
     opensearch = {
-      cpu                                    = 1024
-      memory                                 = 2048
-      essential                              = true
-      image                                  = "opensearchproject/opensearch:2.19.0"
-      user                                   = "0"
+      cpu       = 1024
+      memory    = 2048
+      essential = true
+      image     = "opensearchproject/opensearch:2.19.0"
+      # Unlike most other containers in this repo, NOT root - the official
+      # image refuses to start as root ("OpenSearch cannot run as root.
+      # Please start your container as another user."), exiting 1
+      # immediately. Runs as its own baked-in non-root user instead.
       readonlyRootFilesystem                 = false
       cloudwatch_log_group_retention_in_days = 1
 
