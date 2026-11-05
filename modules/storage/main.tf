@@ -13,7 +13,8 @@ resource "aws_s3_bucket_cors_configuration" "media" {
     allowed_origins = [
       "https://*.${var.domain}",
       "https://${var.domain}",
-      "https://local.${var.domain}:3000"
+      "https://local.${var.domain}:3000",
+      "https://local.${var.domain}:3001"
     ]
     expose_headers  = []
     max_age_seconds = 3000
