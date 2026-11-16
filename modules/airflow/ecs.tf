@@ -174,6 +174,12 @@ module "airflow_task_definition" {
           valueFrom = "arn:aws:secretsmanager:eu-west-2:${data.aws_caller_identity.current.account_id}:secret:prod/ufb/airflow-JDJfSg:KNOCK_API_KEY::"
         },
         {
+          # Restricted, read-only (Balance) Stripe key used by the royalty close
+          # to fetch the month's balance transactions (royalty_payable_streams).
+          name      = "STRIPE_ROYALTIES_KEY"
+          valueFrom = "arn:aws:secretsmanager:eu-west-2:${data.aws_caller_identity.current.account_id}:secret:prod/ufb/airflow-JDJfSg:STRIPE_ROYALTIES_KEY::"
+        },
+        {
           # Overrides the UI-managed "prod-ufb-db" connection. Airflow's
           # env-var connection lookup uppercases conn_id as-is (no dash-to-
           # underscore substitution), so the name must keep the dashes.
