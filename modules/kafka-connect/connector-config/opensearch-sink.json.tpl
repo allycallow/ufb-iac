@@ -3,7 +3,7 @@
   "config": {
     "connector.class": "io.aiven.kafka.connect.opensearch.OpenSearchSinkConnector",
     "tasks.max": "1",
-    "topics": "ufb.tracks,ufb.releases,ufb.artists,ufb.labels",
+    "topics": "ufb.tracks,ufb.releases,ufb.artists,ufb.labels,ufb.playlists",
     "connection.url": "${connection_url}",
 %{ if manage_opensearch }
     "aws.region": "eu-west-2",
@@ -18,7 +18,7 @@
     "connection.timeout.ms": "10000",
     "read.timeout.ms": "30000",
 
-    "predicates": "IsTracksTopic,IsReleasesTopic,IsArtistsTopic,IsLabelsTopic",
+    "predicates": "IsTracksTopic,IsReleasesTopic,IsArtistsTopic,IsLabelsTopic,IsPlaylistsTopic",
     "predicates.IsTracksTopic.type": "org.apache.kafka.connect.transforms.predicates.TopicNameMatches",
     "predicates.IsTracksTopic.pattern": "ufb\\.tracks",
     "predicates.IsReleasesTopic.type": "org.apache.kafka.connect.transforms.predicates.TopicNameMatches",
@@ -27,8 +27,10 @@
     "predicates.IsArtistsTopic.pattern": "ufb\\.artists",
     "predicates.IsLabelsTopic.type": "org.apache.kafka.connect.transforms.predicates.TopicNameMatches",
     "predicates.IsLabelsTopic.pattern": "ufb\\.labels",
+    "predicates.IsPlaylistsTopic.type": "org.apache.kafka.connect.transforms.predicates.TopicNameMatches",
+    "predicates.IsPlaylistsTopic.pattern": "ufb\\.playlists",
 
-    "transforms": "ExtractData,InsertTypeTracks,InsertTypeReleases,InsertTypeArtists,InsertTypeLabels",
+    "transforms": "ExtractData,InsertTypeTracks,InsertTypeReleases,InsertTypeArtists,InsertTypeLabels,InsertTypePlaylists",
     "transforms.ExtractData.type": "org.apache.kafka.connect.transforms.ExtractField$Value",
     "transforms.ExtractData.field": "data",
     "transforms.InsertTypeTracks.type": "org.apache.kafka.connect.transforms.InsertField$Value",
@@ -46,6 +48,10 @@
     "transforms.InsertTypeLabels.type": "org.apache.kafka.connect.transforms.InsertField$Value",
     "transforms.InsertTypeLabels.static.field": "type",
     "transforms.InsertTypeLabels.static.value": "labels",
-    "transforms.InsertTypeLabels.predicate": "IsLabelsTopic"
+    "transforms.InsertTypeLabels.predicate": "IsLabelsTopic",
+    "transforms.InsertTypePlaylists.type": "org.apache.kafka.connect.transforms.InsertField$Value",
+    "transforms.InsertTypePlaylists.static.field": "type",
+    "transforms.InsertTypePlaylists.static.value": "playlists",
+    "transforms.InsertTypePlaylists.predicate": "IsPlaylistsTopic"
   }
 }
