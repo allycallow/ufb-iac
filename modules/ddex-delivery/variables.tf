@@ -56,7 +56,7 @@ variable "track_metadata_task_role_arn" {
 }
 
 variable "stale_delivery_retention_days" {
-  description = "Fallback expiration for delivery objects that never get tagged ddex-processed=true - e.g. a delivery that failed validation and was never retried. Long enough to debug, short enough that abandoned deliveries don't accumulate indefinitely."
+  description = "Days after upload before a delivery object tagged ddex-processed=false (set by ddex-ingest when it rejects a delivery) is deleted. Long enough to debug a rejected delivery, short enough that they don't accumulate indefinitely. Processed deliveries are archived, not expired."
   type        = number
   default     = 90
 }
