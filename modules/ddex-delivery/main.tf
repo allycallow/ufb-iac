@@ -18,14 +18,18 @@ resource "aws_s3_bucket" "deliveries" {
 # comes up over what was actually sent. Deep Archive runs ~$0.001/GB-month,
 # so retaining every delivery indefinitely is effectively free.
 #
-# The tag-based rule depends on ddex-ingest tagging an object
-# ddex-processed=true once it's checksum-verified and ingested - that
-# tagging doesn't exist yet (ddex-ingest is still a stub), so this rule is a
-# no-op until that's built. The untagged rule is the fallback for deliveries
-# that fail validation and never get tagged - those have no compliance value
-# (they were never a confirmed, ingested delivery), so they're deleted
+# Both rules key off a tag ddex-ingest sets on the manifest and its
+# resources: ddex-processed=true once a delivery is checksum-verified and
+# mapped, ddex-processed=false once it's rejected. A rejected delivery has
+# no compliance value (it was never a confirmed delivery), so it's deleted
 # rather than archived, just so storage doesn't grow unbounded while a
 # broken delivery is being debugged.
+#
+# The expiry rule must match on =false rather than on "not =true": S3
+# lifecycle filters can't express an absent tag, and a prefix-only filter
+# would also expire the archived, processed objects. An object that never
+# got tagged at all (e.g. one that went to the DLQ before ddex-ingest ran)
+# is deliberately left alone - the DLQ alert is what surfaces that case.
 resource "aws_s3_bucket_lifecycle_configuration" "deliveries" {
   bucket = aws_s3_bucket.deliveries.id
 
@@ -47,11 +51,16 @@ resource "aws_s3_bucket_lifecycle_configuration" "deliveries" {
   }
 
   rule {
-    id     = "expire-stale-deliveries"
+    id     = "expire-rejected-deliveries"
     status = "Enabled"
 
     filter {
-      prefix = "partners/"
+      and {
+        prefix = "partners/"
+        tags = {
+          "ddex-processed" = "false"
+        }
+      }
     }
 
     expiration {
