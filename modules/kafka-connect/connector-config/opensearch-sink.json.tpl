@@ -30,7 +30,7 @@
     "predicates.IsPlaylistsTopic.type": "org.apache.kafka.connect.transforms.predicates.TopicNameMatches",
     "predicates.IsPlaylistsTopic.pattern": "ufb\\.playlists",
 
-    "transforms": "ExtractData,InsertTypeTracks,InsertTypeReleases,InsertTypeArtists,InsertTypeLabels,InsertTypePlaylists",
+    "transforms": "ExtractData,InsertTypeTracks,InsertTypeReleases,InsertTypeArtists,InsertTypeLabels,InsertTypePlaylists,RouteToSearchIndex",
     "transforms.ExtractData.type": "org.apache.kafka.connect.transforms.ExtractField$Value",
     "transforms.ExtractData.field": "data",
     "transforms.InsertTypeTracks.type": "org.apache.kafka.connect.transforms.InsertField$Value",
@@ -52,6 +52,9 @@
     "transforms.InsertTypePlaylists.type": "org.apache.kafka.connect.transforms.InsertField$Value",
     "transforms.InsertTypePlaylists.static.field": "type",
     "transforms.InsertTypePlaylists.static.value": "playlists",
-    "transforms.InsertTypePlaylists.predicate": "IsPlaylistsTopic"
+    "transforms.InsertTypePlaylists.predicate": "IsPlaylistsTopic",
+    "transforms.RouteToSearchIndex.type": "org.apache.kafka.connect.transforms.RegexRouter",
+    "transforms.RouteToSearchIndex.regex": "ufb\\.(tracks|releases|artists|labels|playlists)",
+    "transforms.RouteToSearchIndex.replacement": "upfrontbeats"
   }
 }
