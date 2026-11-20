@@ -172,6 +172,10 @@ module "backend_task_definition" {
           "valueFrom" : "${var.secret_prefix}:API_KEY::"
         },
         {
+          "name" : "SECRET_KEY",
+          "valueFrom" : "${var.secret_prefix}:secret_key::"
+        },
+        {
           "name" : "MEDIA_PRIVATE_KEY_VALUE",
           "valueFrom" : "${var.secret_prefix}:media_private_key::"
         },
